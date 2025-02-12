@@ -1,5 +1,5 @@
 [package]
-name = "e2k-rs"
+name = "e2k"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,3 +8,5 @@ crate-type = ["rlib"]
 
 [dependencies]
 anyhow = "1.0.95"
+ndarray = "0.16.1"
+ndarray-npz = "0.3.0"

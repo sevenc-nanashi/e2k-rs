@@ -1,0 +1,3 @@
+[submodule "deps/e2k"]
+	path = deps/e2k
+	url = https://github.com/Patchethium/e2k
