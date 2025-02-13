@@ -52,8 +52,8 @@ impl E2k {
 }
 
 struct S2s {
-    e_emb: layers::Embedding<f32>,
-    k_emb: layers::Embedding<f32>,
+    e_emb: layers::Embedding,
+    k_emb: layers::Embedding,
     encoder: layers::Gru,
     encoder_reverse: layers::Gru,
     encoder_fc: layers::Linear,

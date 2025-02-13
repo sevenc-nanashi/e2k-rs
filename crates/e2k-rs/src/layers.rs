@@ -1,7 +1,8 @@
 use itertools::Itertools;
+use ndarray::prelude::*;
 
-pub(crate) fn sigmoid(x: f32) -> f32 {
-    1.0 / (1.0 + (-x).exp())
+pub(crate) fn sigmoid_1d(x: Array1<f32>) -> Array1<f32> {
+    x.map(|x| 1.0 / (1.0 + (-x).exp()))
 }
 
 pub(crate) fn matmul_3d<T>(a: &ndarray::Array3<T>, b: &ndarray::Array3<T>) -> ndarray::Array3<T>
@@ -45,7 +46,18 @@ macro_rules! split_ndarray {
         split.into_iter().collect_tuple().unwrap()
     }};
 }
+macro_rules! split_ndarray_owned {
+    ($array:expr, $n:expr, $axis:expr) => {{
+        let split = split_ndarray($array, $n, $axis);
+        split
+            .into_iter()
+            .map(|x| x.to_owned())
+            .collect_tuple()
+            .unwrap()
+    }};
+}
 
+#[derive(Debug)]
 pub(crate) struct Linear {
     weight: ndarray::Array2<f32>,
     bias: ndarray::Array1<f32>,
@@ -55,21 +67,26 @@ impl Linear {
     pub fn new(weight: ndarray::Array2<f32>, bias: ndarray::Array1<f32>) -> Self {
         Self { weight, bias }
     }
-    pub fn forward(&self, input: &ndarray::Array2<f32>) -> ndarray::Array2<f32> {
+    pub fn forward_2d(&self, input: &ndarray::Array2<f32>) -> ndarray::Array2<f32> {
+        let output = input.dot(&self.weight.t());
+        output + &self.bias
+    }
+    pub fn forward_1d(&self, input: &ndarray::Array1<f32>) -> ndarray::Array1<f32> {
         let output = input.dot(&self.weight.t());
         output + &self.bias
     }
 }
 
-pub(crate) struct Embedding<T: Copy> {
-    weight: ndarray::Array2<T>,
+#[derive(Debug)]
+pub(crate) struct Embedding {
+    weight: ndarray::Array2<f32>,
 }
 
-impl<T: Copy> Embedding<T> {
-    pub fn new(weight: ndarray::Array2<T>) -> Self {
+impl Embedding {
+    pub fn new(weight: ndarray::Array2<f32>) -> Self {
         Self { weight }
     }
-    pub fn forward(&self, input: &ndarray::Array1<usize>) -> ndarray::Array2<T> {
+    pub fn forward(&self, input: &ndarray::Array1<usize>) -> ndarray::Array2<f32> {
         ndarray::stack(
             ndarray::Axis(0),
             &input
@@ -82,6 +99,7 @@ impl<T: Copy> Embedding<T> {
 }
 
 /// Multi-Head Attention Layer
+#[derive(Debug)]
 pub(crate) struct Mha {
     q_proj: Linear,
     k_proj: Linear,
@@ -128,9 +146,9 @@ impl Mha {
         key: &ndarray::Array2<f32>,
         value: &ndarray::Array2<f32>,
     ) -> ndarray::Array2<f32> {
-        let q = self.q_proj.forward(query);
-        let k = self.k_proj.forward(key);
-        let v = self.v_proj.forward(value);
+        let q = self.q_proj.forward_2d(query);
+        let k = self.k_proj.forward_2d(key);
+        let v = self.v_proj.forward_2d(value);
         let q = split_ndarray(&q, self.n_heads, ndarray::Axis(q.ndim() - 1));
         let q = ndarray::stack(ndarray::Axis(0), &q).unwrap();
         let k = split_ndarray(&k, self.n_heads, ndarray::Axis(k.ndim() - 1));
@@ -151,11 +169,103 @@ impl Mha {
         let output = output
             .to_shape((output.shape()[0], output.shape()[1] * output.shape()[2]))
             .unwrap();
-        self.out_proj.forward(&output.to_owned())
+        self.out_proj.forward_2d(&output.to_owned())
     }
 }
 
-pub(crate) struct Gru {}
+#[derive(Debug)]
+pub(crate) struct GruCell {
+    ih: Linear,
+    hh: Linear,
+}
+
+impl GruCell {
+    pub(crate) fn new(
+        weight_ih: ndarray::Array2<f32>,
+        weight_hh: ndarray::Array2<f32>,
+        bias_ih: ndarray::Array1<f32>,
+        bias_hh: ndarray::Array1<f32>,
+    ) -> Self {
+        let ih = Linear::new(weight_ih, bias_ih);
+        let hh = Linear::new(weight_hh, bias_hh);
+        Self { ih, hh }
+    }
+
+    pub(crate) fn forward(
+        &self,
+        input: &ndarray::Array1<f32>,
+        hidden: &Option<ndarray::Array1<f32>>,
+    ) -> ndarray::Array1<f32> {
+        let hidden = hidden
+            .clone()
+            .unwrap_or_else(|| ndarray::Array1::zeros((input.shape()[0],)));
+        let rzn_ih = self.ih.forward_1d(input);
+        let rzn_hh = self.hh.forward_1d(&hidden);
+
+        let rz_ih = rzn_ih
+            .slice(s![..rzn_ih.shape()[rzn_ih.ndim() - 1] * 2 / 3])
+            .to_owned();
+        let n_ih = rzn_ih
+            .slice(s![rzn_ih.shape()[rzn_ih.ndim() - 1] * 2 / 3..])
+            .to_owned();
+        let rz_hh = rzn_hh
+            .slice(s![..rzn_hh.shape()[rzn_hh.ndim() - 1] * 2 / 3])
+            .to_owned();
+        let n_hh = rzn_hh
+            .slice(s![rzn_hh.shape()[rzn_hh.ndim() - 1] * 2 / 3..])
+            .to_owned();
+
+        let rz = sigmoid_1d(rz_ih + rz_hh);
+        let (r, z) = split_ndarray_owned!(&rz, 2, ndarray::Axis(rz.ndim() - 1));
+
+        let n = (n_ih + r * n_hh).map(|x| x.tanh());
+        let h = (1.0 - z.clone()) * n + z * hidden;
+
+        return h;
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct Gru {
+    cell: GruCell,
+    reverse: bool,
+}
+
+impl Gru {
+    pub(crate) fn new(cell: GruCell, reverse: bool) -> Self {
+        Self { cell, reverse }
+    }
+
+    pub(crate) fn forward(
+        &self,
+        input: &ndarray::Array2<f32>,
+        hidden: Option<ndarray::Array1<f32>>,
+    ) -> (ndarray::Array2<f32>, ndarray::Array1<f32>) {
+        let mut hidden = hidden;
+        let input = if self.reverse {
+            input.slice(s![.., ..; -1]).to_owned()
+        } else {
+            input.to_owned()
+        };
+        let mut outputs = Vec::with_capacity(input.shape()[0]);
+        for i in 0..input.shape()[0] {
+            hidden = Some(
+                self.cell
+                    .forward(&input.index_axis(ndarray::Axis(0), i).to_owned(), &hidden),
+            );
+            outputs.push(hidden.clone().unwrap());
+        }
+        let mut outputs = ndarray::stack(
+            ndarray::Axis(0),
+            &outputs.iter().map(|o| o.view()).collect_vec(),
+        )
+        .unwrap();
+        if self.reverse {
+            outputs = outputs.slice(s![.., ..; -1]).to_owned();
+        }
+        (outputs, hidden.unwrap())
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -166,16 +276,16 @@ mod tests {
     fn test_linear() {
         let linear = Linear::new(array![[1.0, 2.0], [3.0, 4.0]], array![5.0, 6.0]);
         let input = array![[7.0, 8.0], [9.0, 10.0]];
-        let output = linear.forward(&input);
+        let output = linear.forward_2d(&input);
         assert_eq!(output, array![[28.0, 59.0], [34.0, 73.0]]);
     }
 
     #[test]
     fn test_embedding() {
-        let embedding = Embedding::new(array![[1, 2], [3, 4], [5, 6]]);
+        let embedding = Embedding::new(array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]);
         let input = array![1, 2, 0];
         let output = embedding.forward(&input);
-        assert_eq!(output, array![[3, 4], [5, 6], [1, 2]]);
+        assert_eq!(output, array![[3.0, 4.0], [5.0, 6.0], [1.0, 2.0]]);
     }
 
     #[test]
