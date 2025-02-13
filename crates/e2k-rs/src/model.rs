@@ -7,7 +7,7 @@
 //     名前：文字列（Null Terminated）
 //     形状：[次元数][u32x次元数]
 //       次元数：u8
-//     種別：u8（0: u64, 1: f32）
+//     種別：u8（0：u64、1：f32、2：f64）
 //     データ：バイト列（Little Endian）
 
 use std::collections::HashMap;
@@ -35,6 +35,7 @@ impl std::fmt::Debug for ModelArray {
 pub(crate) enum ModelArrayData {
     U64(Vec<u64>),
     F32(Vec<f32>),
+    F64(Vec<f64>),
 }
 
 pub(crate) trait FromModelArrayDataElement {
@@ -52,6 +53,15 @@ impl FromModelArrayDataElement for int_type {
     fn from_model_array_data_element(data: &ModelArrayData, index: usize) -> Option<Self> {
         match data {
             variant(data) => data.get(index).copied(),
+            _ => None,
+        }
+    }
+}
+impl FromModelArrayDataElement for f64 {
+    fn from_model_array_data_element(data: &ModelArrayData, index: usize) -> Option<Self> {
+        match data {
+            ModelArrayData::F64(data) => data.get(index).copied(),
+            ModelArrayData::F32(data) => data.get(index).copied().map(f64::from),
             _ => None,
         }
     }
@@ -98,6 +108,10 @@ impl Model {
                     let (data, bytes) = read_f32s(bytes, num_elements as usize);
                     (ModelArrayData::F32(data), bytes)
                 }
+                2 => {
+                    let (data, bytes) = read_f64s(bytes, num_elements as usize);
+                    (ModelArrayData::F64(data), bytes)
+                }
                 _ => panic!("Model: invalid kind"),
             };
             outer_bytes = bytes;
@@ -142,6 +156,7 @@ fn read_string(bytes: &[u8]) -> (String, &[u8]) {
     function_name int_type;
     [read_u64]    [u64];
     [read_u32]    [u32];
+    [read_f64]    [f64];
     [read_f32]    [f32];
     [read_u8]     [u8];
 )]
@@ -154,6 +169,7 @@ fn function_name(bytes: &[u8]) -> (int_type, &[u8]) {
     function_name inner_name  int_type;
     [read_u64s]   [read_u64]  [u64];
     [read_u32s]   [read_u32]  [u32];
+    [read_f64s]   [read_f64]  [f64];
     [read_f32s]   [read_f32]  [f32];
 )]
 fn function_name(bytes: &[u8], count: usize) -> (Vec<int_type>, &[u8]) {

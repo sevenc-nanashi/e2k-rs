@@ -30,6 +30,10 @@ for file, dest in [("model-c2k.npz", "c2k.e2km"), ("model-p2k.npz", "p2k.e2km")]
                 f.write(b"\x01")
                 f.write(np.ascontiguousarray(loaded[key], dtype='<f4').tobytes())
                 print(f"  Converted {key} as float32")
+            elif loaded[key].dtype == np.float64:
+                f.write(b"\x02")
+                f.write(np.ascontiguousarray(loaded[key], dtype='<f8').tobytes())
+                print(f"  Converted {key} as float64")
             else:
                 raise ValueError(f"Unsupported dtype: {loaded[key].dtype}")
     print(f"Converted {model} to {dest}")

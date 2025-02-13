@@ -21,9 +21,9 @@ pub struct StrategyTopK {
 #[educe(Default)]
 pub struct StrategyTopP {
     #[educe(Default(expression = 0.9))]
-    pub top_p: f32,
+    pub top_p: f64,
     #[educe(Default(expression = 1.0))]
-    pub temperature: f32,
+    pub temperature: f64,
 }
 
 /// 英単語 -> カタカナ。
@@ -112,7 +112,7 @@ impl S2s {
     fn new(weights: crate::model::Model, max_len: usize) -> Self {
         let e_emb = layers::Embedding::new(
             weights
-                .get_array::<f32, ndarray::Ix2>("e_emb.weight")
+                .get_array::<f64, ndarray::Ix2>("e_emb.weight")
                 .unwrap(),
         );
         let k_emb = layers::Embedding::new(weights.get_array("k_emb.weight").unwrap());
@@ -183,7 +183,7 @@ impl S2s {
         }
     }
 
-    fn greedy(&self, step_dec: &ndarray::Array1<f32>) -> usize {
+    fn greedy(&self, step_dec: &ndarray::Array1<f64>) -> usize {
         let max = *step_dec
             .iter()
             .max_by(|a, b| a.partial_cmp(b).unwrap())
@@ -192,7 +192,7 @@ impl S2s {
         argmax
     }
 
-    fn top_k(&self, step_dec: &ndarray::Array1<f32>, k: usize) -> usize {
+    fn top_k(&self, step_dec: &ndarray::Array1<f64>, k: usize) -> usize {
         let step_dec = step_dec.to_vec();
         let mut indices = (0..step_dec.len()).collect::<Vec<_>>();
         indices.sort_unstable_by(|&i, &j| step_dec[j].partial_cmp(&step_dec[i]).unwrap());
@@ -203,7 +203,7 @@ impl S2s {
         *idx
     }
 
-    fn top_p(&self, step_dec: &ndarray::Array1<f32>, top_p: f32, temperature: f32) -> usize {
+    fn top_p(&self, step_dec: &ndarray::Array1<f64>, top_p: f64, temperature: f64) -> usize {
         let step_dec = step_dec.exp() / temperature;
         let sum = step_dec.sum();
         let step_dec = step_dec / sum;
@@ -221,7 +221,7 @@ impl S2s {
         **idx
     }
 
-    fn decode(&self, x: &ndarray::Array1<f32>) -> usize {
+    fn decode(&self, x: &ndarray::Array1<f64>) -> usize {
         match &self.strategy {
             Strategy::Greedy => self.greedy(x),
             Strategy::TopK(StrategyTopK { k }) => self.top_k(x, *k),
