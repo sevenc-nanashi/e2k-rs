@@ -124,8 +124,8 @@ impl Mha {
         let k_proj = Linear::new(k_w.to_owned(), k_b.to_owned());
         let v_proj = Linear::new(v_w.to_owned(), v_b.to_owned());
         let out_proj = Linear::new(out_proj_weight, out_proj_bias);
-        let d_heads = dim / num_heads;
-        let scale = (d_heads as f64).sqrt();
+        let scale = (dim as f64).sqrt();
+        dbg!(scale);
         Self {
             q_proj,
             k_proj,
