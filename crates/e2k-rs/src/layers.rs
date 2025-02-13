@@ -67,11 +67,11 @@ impl Linear {
     pub fn new(weight: ndarray::Array2<f64>, bias: ndarray::Array1<f64>) -> Self {
         Self { weight, bias }
     }
-    pub fn forward_2d(&self, input: &ndarray::Array2<f64>) -> ndarray::Array2<f64> {
+    pub fn forward_2d(&self, input: &ndarray::ArrayView2<f64>) -> ndarray::Array2<f64> {
         let output = input.dot(&self.weight.t());
         output + &self.bias
     }
-    pub fn forward_1d(&self, input: &ndarray::Array1<f64>) -> ndarray::Array1<f64> {
+    pub fn forward_1d(&self, input: &ndarray::ArrayView1<f64>) -> ndarray::Array1<f64> {
         let output = input.dot(&self.weight.t());
         output + &self.bias
     }
@@ -138,9 +138,9 @@ impl Mha {
 
     pub(crate) fn forward(
         &self,
-        query: &ndarray::Array2<f64>,
-        key: &ndarray::Array2<f64>,
-        value: &ndarray::Array2<f64>,
+        query: &ndarray::ArrayView2<f64>,
+        key: &ndarray::ArrayView2<f64>,
+        value: &ndarray::ArrayView2<f64>,
     ) -> ndarray::Array2<f64> {
         let q = self.q_proj.forward_2d(query);
         let k = self.k_proj.forward_2d(key);
@@ -165,7 +165,7 @@ impl Mha {
         let output = output
             .to_shape((output.shape()[0], output.shape()[1] * output.shape()[2]))
             .unwrap();
-        self.out_proj.forward_2d(&output.to_owned())
+        self.out_proj.forward_2d(&output.view())
     }
 }
 
@@ -189,14 +189,15 @@ impl GruCell {
 
     pub(crate) fn forward(
         &self,
-        input: &ndarray::Array1<f64>,
-        hidden: &Option<ndarray::Array1<f64>>,
+        input: &ndarray::ArrayView1<f64>,
+        hidden: &Option<ndarray::ArrayView1<f64>>,
     ) -> ndarray::Array1<f64> {
-        let hidden = hidden.clone().unwrap_or_else(|| {
-            ndarray::Array1::zeros((self.hh.weight.shape()[self.hh.weight.ndim() - 1],))
-        });
+        let hidden = hidden.map_or_else(
+            || ndarray::Array1::zeros((self.hh.weight.shape()[self.hh.weight.ndim() - 1],)),
+            |x| x.to_owned(),
+        );
         let rzn_ih = self.ih.forward_1d(input);
-        let rzn_hh = self.hh.forward_1d(&hidden);
+        let rzn_hh = self.hh.forward_1d(&hidden.view());
 
         let rz_ih = rzn_ih
             .slice(s![..rzn_ih.shape()[rzn_ih.ndim() - 1] * 2 / 3])
@@ -232,10 +233,10 @@ impl Gru {
 
     pub(crate) fn forward(
         &self,
-        input: &ndarray::Array2<f64>,
-        hidden: Option<ndarray::Array1<f64>>,
+        input: &ndarray::ArrayView2<f64>,
+        hidden: Option<ndarray::ArrayView1<f64>>,
     ) -> (ndarray::Array2<f64>, ndarray::Array1<f64>) {
-        let mut hidden = hidden;
+        let mut hidden = hidden.map(|x| x.to_owned());
         let input = if self.reverse {
             input.slice(s![..; -1, ..]).to_owned()
         } else {
@@ -243,10 +244,14 @@ impl Gru {
         };
         let mut outputs = Vec::with_capacity(input.shape()[0]);
         for i in 0..input.shape()[0] {
-            hidden = Some(
-                self.cell
-                    .forward(&input.index_axis(ndarray::Axis(0), i).to_owned(), &hidden),
-            );
+            hidden = Some(match &hidden {
+                Some(h) => self
+                    .cell
+                    .forward(&input.index_axis(ndarray::Axis(0), i), &Some(h.view())),
+                None => self
+                    .cell
+                    .forward(&input.index_axis(ndarray::Axis(0), i), &None),
+            });
             outputs.push(hidden.clone().unwrap());
         }
         let mut outputs = ndarray::stack(
@@ -270,7 +275,7 @@ mod tests {
     fn test_linear() {
         let linear = Linear::new(array![[1.0, 2.0], [3.0, 4.0]], array![5.0, 6.0]);
         let input = array![[7.0, 8.0], [9.0, 10.0]];
-        let output = linear.forward_2d(&input);
+        let output = linear.forward_2d(&input.view());
         assert_eq!(output, array![[28.0, 59.0], [34.0, 73.0]]);
     }
 

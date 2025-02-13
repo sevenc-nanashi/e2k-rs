@@ -183,7 +183,7 @@ impl S2s {
         }
     }
 
-    fn greedy(&self, step_dec: &ndarray::Array1<f64>) -> usize {
+    fn greedy(&self, step_dec: &ndarray::ArrayView1<f64>) -> usize {
         let max = *step_dec
             .iter()
             .max_by(|a, b| a.partial_cmp(b).unwrap())
@@ -192,7 +192,7 @@ impl S2s {
         argmax
     }
 
-    fn top_k(&self, step_dec: &ndarray::Array1<f64>, k: usize) -> usize {
+    fn top_k(&self, step_dec: &ndarray::ArrayView1<f64>, k: usize) -> usize {
         let step_dec = step_dec.to_vec();
         let mut indices = (0..step_dec.len()).collect::<Vec<_>>();
         indices.sort_unstable_by(|&i, &j| step_dec[j].partial_cmp(&step_dec[i]).unwrap());
@@ -203,7 +203,7 @@ impl S2s {
         *idx
     }
 
-    fn top_p(&self, step_dec: &ndarray::Array1<f64>, top_p: f64, temperature: f64) -> usize {
+    fn top_p(&self, step_dec: &ndarray::ArrayView1<f64>, top_p: f64, temperature: f64) -> usize {
         let step_dec = step_dec.exp() / temperature;
         let sum = step_dec.sum();
         let step_dec = step_dec / sum;
@@ -221,7 +221,7 @@ impl S2s {
         **idx
     }
 
-    fn decode(&self, x: &ndarray::Array1<f64>) -> usize {
+    fn decode(&self, x: &ndarray::ArrayView1<f64>) -> usize {
         match &self.strategy {
             Strategy::Greedy => self.greedy(x),
             Strategy::TopK(StrategyTopK { k }) => self.top_k(x, *k),
@@ -233,34 +233,42 @@ impl S2s {
 
     fn forward(&self, source: &ndarray::Array1<usize>) -> ndarray::Array1<usize> {
         let e_emb = self.e_emb.forward(source);
-        let (enc_out, _) = self.encoder.forward(&e_emb, None);
-        let (enc_out_rev, _) = self.encoder_reverse.forward(&e_emb, None);
+        let (enc_out, _) = self.encoder.forward(&e_emb.view(), None);
+        let (enc_out_rev, _) = self.encoder_reverse.forward(&e_emb.view(), None);
         let enc_out = ndarray::concatenate(
             ndarray::Axis(enc_out.ndim() - 1),
             &[enc_out.view(), enc_out_rev.view()],
         )
         .unwrap();
-        let enc_out = self.encoder_fc.forward_2d(&enc_out);
+        let enc_out = self.encoder_fc.forward_2d(&enc_out.view());
         let enc_out = enc_out.mapv(|x| x.tanh());
         let mut result = vec![constants::SOS_IDX];
-        let mut h1 = None;
-        let mut h2 = None;
+        let mut h1: Option<ndarray::Array1<f64>> = None;
+        let mut h2: Option<ndarray::Array1<f64>> = None;
         for _ in 0..self.max_len {
             let dec_emb = self
                 .k_emb
                 .forward(&ndarray::Array1::from_elem(1, *result.last().unwrap()));
-            let (dec_out, h1_) = self.pre_decoder.forward(&dec_emb, h1);
+            let (dec_out, h1_) = match h1 {
+                Some(h1) => self.pre_decoder.forward(&dec_emb.view(), Some(h1.view())),
+                None => self.pre_decoder.forward(&dec_emb.view(), None),
+            };
             h1 = Some(h1_);
-            let attn_out = self.attn.forward(&dec_out, &enc_out, &enc_out);
+            let attn_out = self
+                .attn
+                .forward(&dec_out.view(), &enc_out.view(), &enc_out.view());
             let x = ndarray::concatenate(
                 ndarray::Axis(dec_out.ndim() - 1),
                 &[dec_out.view(), attn_out.view()],
             )
             .unwrap();
-            let (x, h2_) = self.post_decoder.forward(&x, h2);
+            let (x, h2_) = match h2 {
+                Some(h2) => self.post_decoder.forward(&x.view(), Some(h2.view())),
+                None => self.post_decoder.forward(&x.view(), None),
+            };
             h2 = Some(h2_);
-            let x = self.fc.forward_2d(&x);
-            let x = x.index_axis_move(ndarray::Axis(0), 0);
+            let x = self.fc.forward_2d(&x.view());
+            let x = x.index_axis(ndarray::Axis(0), 0);
             result.push(self.decode(&x));
             if result.last().unwrap() == &constants::EOS_IDX {
                 break;
