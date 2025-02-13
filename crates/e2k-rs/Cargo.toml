@@ -8,5 +8,8 @@ crate-type = ["rlib"]
 
 [dependencies]
 anyhow = "1.0.95"
+educe = "0.6.0"
+itertools = "0.14.0"
 ndarray = "0.16.1"
 ndarray-npz = "0.3.0"
+num-traits = "0.2.19"
