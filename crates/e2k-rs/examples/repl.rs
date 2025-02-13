@@ -48,7 +48,10 @@ fn main() {
                 top_p: args.top_p,
                 temperature: args.temperature,
             }));
-            println!("アルゴリズム：Top-P, P={}, T={}", args.top_p, args.temperature);
+            println!(
+                "アルゴリズム：Top-P, P={}, T={}",
+                args.top_p, args.temperature
+            );
         }
     }
     println!("Ctrl-C で終了します。");

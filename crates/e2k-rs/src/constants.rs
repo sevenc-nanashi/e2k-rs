@@ -1,7 +1,7 @@
-// `rake generate:constants` により生成。
+// `task generate_constants` により生成。
 // このファイルは直接編集しないでください。
 
-pub const PAD_IDX: usize = 0;
+// pub const PAD_IDX: usize = 0;
 pub const SOS_IDX: usize = 1;
 pub const EOS_IDX: usize = 2;
 pub const EN_PHONES: [&str; 73] = [

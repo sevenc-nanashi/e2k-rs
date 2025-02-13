@@ -6,10 +6,10 @@ destination = os.path.join(os.path.dirname(__file__), "../src/constants.rs")
 with open(destination, "w") as f:
     f.write(
         f"""
-// `task generate:constants` により生成。
+// `task generate_constants` により生成。
 // このファイルは直接編集しないでください。
 
-pub const PAD_IDX: usize = {constants.PAD_IDX};
+// pub const PAD_IDX: usize = {constants.PAD_IDX};
 pub const SOS_IDX: usize = {constants.SOS_IDX};
 pub const EOS_IDX: usize = {constants.EOS_IDX};
 pub const EN_PHONES: [&str; {len(constants.en_phones)}] = [

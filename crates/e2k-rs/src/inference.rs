@@ -1,8 +1,11 @@
 use crate::{constants, layers};
 use educe::Educe;
 use rand::prelude::*;
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
+/// デコードに使うアルゴリズム。
+///
+/// [StrategyTopK] 、 [StrategyTopP] も参照。
 #[derive(Debug)]
 pub enum Strategy {
     Greedy,
@@ -10,6 +13,7 @@ pub enum Strategy {
     TopP(StrategyTopP),
 }
 
+/// Top-Kアルゴリズムのパラメータ。
 #[derive(Debug, Educe)]
 #[educe(Default)]
 pub struct StrategyTopK {
@@ -17,6 +21,7 @@ pub struct StrategyTopK {
     pub k: usize,
 }
 
+/// Top-Pアルゴリズムのパラメータ。
 #[derive(Debug, Educe)]
 #[educe(Default)]
 pub struct StrategyTopP {
@@ -26,9 +31,9 @@ pub struct StrategyTopP {
     pub temperature: f64,
 }
 
-/// 英単語 -> カタカナ。
+/// 英単語 -> カタカナの変換。
 pub struct C2k {
-    inner: BaseE2k,
+    inner: BaseE2k<char, char>,
 }
 
 impl std::fmt::Debug for C2k {
@@ -38,6 +43,11 @@ impl std::fmt::Debug for C2k {
 }
 
 impl C2k {
+    /// 新しいインスタンスを生成する。
+    ///
+    /// # Arguments
+    ///
+    /// max_len: 読みの最大長。
     pub fn new(max_len: usize) -> Self {
         static MODEL: &[u8] = include_bytes!("./models/c2k.e2km");
         let weights = crate::model::Model::new(MODEL);
@@ -57,35 +67,92 @@ impl C2k {
         Self { inner }
     }
 
+    /// 推論を行う。
     pub fn infer(&self, input: &str) -> String {
-        self.inner.infer(input)
+        let input = input.chars().collect::<Vec<_>>();
+        self.inner.infer(&input).into_iter().collect()
     }
 
+    /// アルゴリズムを設定する。
     pub fn set_decode_strategy(&mut self, strategy: Strategy) {
         self.inner.set_decode_strategy(strategy);
     }
 }
 
-struct BaseE2k {
-    s2s: S2s,
-    in_table: HashMap<char, usize>,
-    out_table: HashMap<usize, char>,
+/// 発音 -> カタカナの変換。
+pub struct P2k {
+    inner: BaseE2k<String, char>,
 }
 
-impl BaseE2k {
-    fn infer(&self, input: &str) -> String {
+impl std::fmt::Debug for P2k {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("P2k").finish()
+    }
+}
+
+impl P2k {
+    /// 新しいインスタンスを生成する。
+    ///
+    /// # Arguments
+    ///
+    /// max_len: 読みの最大長。
+    pub fn new(max_len: usize) -> Self {
+        static MODEL: &[u8] = include_bytes!("./models/p2k.e2km");
+        let weights = crate::model::Model::new(MODEL);
+        let inner = BaseE2k {
+            s2s: S2s::new(weights, max_len),
+            in_table: constants::EN_PHONES
+                .iter()
+                .enumerate()
+                .map(|(i, &c)| (c.to_string(), i))
+                .collect(),
+            out_table: constants::KANAS
+                .iter()
+                .enumerate()
+                .map(|(i, &c)| (i, c.chars().next().unwrap()))
+                .collect(),
+        };
+        Self { inner }
+    }
+
+    /// 推論を行う。
+    ///
+    /// # Arguments
+    ///
+    /// input: CMUDictの発音記号。
+    pub fn infer(&self, input: &[&str]) -> String {
+        self.inner
+            .infer(&input.iter().map(|&s| s.to_string()).collect::<Vec<_>>())
+            .into_iter()
+            .collect()
+    }
+
+    /// アルゴリズムを設定する。
+    pub fn set_decode_strategy(&mut self, strategy: Strategy) {
+        self.inner.set_decode_strategy(strategy);
+    }
+}
+
+struct BaseE2k<I: Hash + Eq, O: Clone> {
+    s2s: S2s,
+    in_table: HashMap<I, usize>,
+    out_table: HashMap<usize, O>,
+}
+
+impl<I: Hash + Eq, O: Clone> BaseE2k<I, O> {
+    fn infer(&self, input: &[I]) -> Vec<O> {
         let source = [constants::SOS_IDX]
             .into_iter()
-            .chain(input.chars().filter_map(|c| self.in_table.get(&c).copied()))
+            .chain(input.iter().filter_map(|c| self.in_table.get(c).copied()))
             .chain([constants::EOS_IDX]);
         let source = ndarray::Array1::from_iter(source);
         let target = self.s2s.forward(&source);
-        let target = target
+        target
             .iter()
             .skip(1)
             .take_while(|&&x| x != constants::EOS_IDX)
-            .map(|&x| self.out_table[&x]);
-        target.collect()
+            .map(|&x| self.out_table[&x].clone())
+            .collect()
     }
 
     fn set_decode_strategy(&mut self, strategy: Strategy) {
