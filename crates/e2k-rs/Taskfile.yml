@@ -1,7 +1,10 @@
 version: "3"
 
 tasks:
-  generate:constants:
+  generate_constants:
     cmds:
       - cd tasks && uv run python3 ./generate_constants.py
       - cargo fmt
+  generate_models:
+    cmds:
+      - cd tasks && uv run python3 ./generate_models.py

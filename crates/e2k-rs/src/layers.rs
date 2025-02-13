@@ -106,8 +106,6 @@ pub(crate) struct Mha {
     v_proj: Linear,
     out_proj: Linear,
     n_heads: usize,
-    dim: usize,
-    head_dim: usize,
     scale: f32,
 }
 
@@ -134,8 +132,6 @@ impl Mha {
             v_proj,
             out_proj,
             n_heads: num_heads,
-            dim,
-            head_dim: d_heads,
             scale,
         }
     }
@@ -196,9 +192,9 @@ impl GruCell {
         input: &ndarray::Array1<f32>,
         hidden: &Option<ndarray::Array1<f32>>,
     ) -> ndarray::Array1<f32> {
-        let hidden = hidden
-            .clone()
-            .unwrap_or_else(|| ndarray::Array1::zeros((input.shape()[0],)));
+        let hidden = hidden.clone().unwrap_or_else(|| {
+            ndarray::Array1::zeros((self.hh.weight.shape()[self.hh.weight.ndim() - 1],))
+        });
         let rzn_ih = self.ih.forward_1d(input);
         let rzn_hh = self.hh.forward_1d(&hidden);
 
@@ -219,9 +215,7 @@ impl GruCell {
         let (r, z) = split_ndarray_owned!(&rz, 2, ndarray::Axis(rz.ndim() - 1));
 
         let n = (n_ih + r * n_hh).map(|x| x.tanh());
-        let h = (1.0 - z.clone()) * n + z * hidden;
-
-        return h;
+        (1.0 - z.clone()) * n + z * hidden
     }
 }
 

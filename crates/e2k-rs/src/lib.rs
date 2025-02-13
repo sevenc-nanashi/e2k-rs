@@ -1,7 +1,6 @@
 mod constants;
 mod inference;
 mod layers;
+mod model;
 
-fn main() {
-    println!("Hello, world!");
-}
+pub use inference::*;
