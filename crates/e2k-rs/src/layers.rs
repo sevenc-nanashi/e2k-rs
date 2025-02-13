@@ -237,7 +237,7 @@ impl Gru {
     ) -> (ndarray::Array2<f32>, ndarray::Array1<f32>) {
         let mut hidden = hidden;
         let input = if self.reverse {
-            input.slice(s![.., ..; -1]).to_owned()
+            input.slice(s![..; -1, ..]).to_owned()
         } else {
             input.to_owned()
         };
@@ -255,7 +255,7 @@ impl Gru {
         )
         .unwrap();
         if self.reverse {
-            outputs = outputs.slice(s![.., ..; -1]).to_owned();
+            outputs = outputs.slice(s![..; -1, ..]).to_owned();
         }
         (outputs, hidden.unwrap())
     }
