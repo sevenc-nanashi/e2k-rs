@@ -28,7 +28,7 @@ pub struct StrategyTopP {
 
 /// 英単語 -> カタカナ。
 pub struct C2k {
-    inner: E2k,
+    inner: BaseE2k,
 }
 
 impl std::fmt::Debug for C2k {
@@ -41,7 +41,7 @@ impl C2k {
     pub fn new(max_len: usize) -> Self {
         static MODEL: &[u8] = include_bytes!("./models/c2k.e2km");
         let weights = crate::model::Model::new(MODEL);
-        let inner = E2k {
+        let inner = BaseE2k {
             s2s: S2s::new(weights, max_len),
             in_table: constants::ASCII_ENTRIES
                 .iter()
@@ -66,18 +66,18 @@ impl C2k {
     }
 }
 
-struct E2k {
+struct BaseE2k {
     s2s: S2s,
     in_table: HashMap<char, usize>,
     out_table: HashMap<usize, char>,
 }
 
-impl E2k {
+impl BaseE2k {
     fn infer(&self, input: &str) -> String {
         let source = [constants::SOS_IDX]
             .into_iter()
             .chain(input.chars().filter_map(|c| self.in_table.get(&c).copied()))
-            .chain([constants::SOS_IDX]);
+            .chain([constants::EOS_IDX]);
         let source = ndarray::Array1::from_iter(source);
         let target = self.s2s.forward(&source);
         let target = target

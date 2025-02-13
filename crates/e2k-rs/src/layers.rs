@@ -125,7 +125,6 @@ impl Mha {
         let v_proj = Linear::new(v_w.to_owned(), v_b.to_owned());
         let out_proj = Linear::new(out_proj_weight, out_proj_bias);
         let scale = (dim as f64).sqrt();
-        dbg!(scale);
         Self {
             q_proj,
             k_proj,
@@ -199,23 +198,17 @@ impl GruCell {
         let rzn_ih = self.ih.forward_1d(input);
         let rzn_hh = self.hh.forward_1d(&hidden.view());
 
-        let rz_ih = rzn_ih
-            .slice(s![..rzn_ih.shape()[rzn_ih.ndim() - 1] * 2 / 3])
-            .to_owned();
-        let n_ih = rzn_ih
-            .slice(s![rzn_ih.shape()[rzn_ih.ndim() - 1] * 2 / 3..])
-            .to_owned();
-        let rz_hh = rzn_hh
-            .slice(s![..rzn_hh.shape()[rzn_hh.ndim() - 1] * 2 / 3])
-            .to_owned();
-        let n_hh = rzn_hh
-            .slice(s![rzn_hh.shape()[rzn_hh.ndim() - 1] * 2 / 3..])
-            .to_owned();
+        let (rz_ih, n_ih) = rzn_ih
+            .view()
+            .split_at(ndarray::Axis(0), rzn_ih.shape()[rzn_ih.ndim() - 1] * 2 / 3);
+        let (rz_hh, n_hh) = rzn_hh
+            .view()
+            .split_at(ndarray::Axis(0), rzn_hh.shape()[rzn_hh.ndim() - 1] * 2 / 3);
 
-        let rz = sigmoid_1d(rz_ih + rz_hh);
+        let rz = sigmoid_1d(rz_ih.to_owned() + rz_hh.to_owned());
         let (r, z) = split_ndarray_owned!(&rz, 2, ndarray::Axis(rz.ndim() - 1));
 
-        let n = (n_ih + r * n_hh).map(|x| x.tanh());
+        let n = (n_ih.to_owned() + r * n_hh.to_owned()).mapv(|x| x.tanh());
         (1.0 - z.clone()) * n + z * hidden
     }
 }
