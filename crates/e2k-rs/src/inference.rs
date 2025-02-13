@@ -1,6 +1,5 @@
 use crate::{constants, layers};
 use educe::Educe;
-use rand::prelude::*;
 use std::{collections::HashMap, hash::Hash};
 
 /// デコードに使うアルゴリズム。
@@ -31,7 +30,36 @@ pub struct StrategyTopP {
     pub temperature: f64,
 }
 
-/// 英単語 -> カタカナの変換。
+#[cfg(any(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    feature = "getrandom_on_wasm32_unknown"
+))]
+fn generate_random<T: num_traits::ToBytes>(_data: &[T]) -> usize {
+    use rand::Rng;
+    let mut rng = rand::rng();
+    rng.random::<f64>().to_bits().wrapping_rem(usize::MAX as u64) as usize
+}
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown", not(feature = "getrandom_on_wasm32_unknown")))]
+fn generate_random<T: num_traits::ToBytes>(data: &[T]) -> usize {
+    use std::hash::Hasher;
+
+    static HASH_SEED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    let random_pointer = Box::into_raw(Box::new(())) as usize;
+    let val = HASH_SEED.fetch_add(random_pointer, std::sync::atomic::Ordering::Relaxed);
+    val.hash(&mut hasher);
+    for d in data {
+        d.to_le_bytes().hash(&mut hasher);
+    }
+
+    let data = hasher.finish() as usize;
+    HASH_SEED.store(data, std::sync::atomic::Ordering::Relaxed);
+    data
+}
+
+/// 英単語 -> カタカナの変換器。
 pub struct C2k {
     inner: BaseE2k<char, char>,
 }
@@ -79,7 +107,7 @@ impl C2k {
     }
 }
 
-/// 発音 -> カタカナの変換。
+/// 発音 -> カタカナの変換器。
 pub struct P2k {
     inner: BaseE2k<String, char>,
 }
@@ -261,16 +289,16 @@ impl S2s {
 
     fn top_k(&self, step_dec: &ndarray::ArrayView1<f64>, k: usize) -> usize {
         let step_dec = step_dec.to_vec();
+        let random = generate_random(&step_dec);
         let mut indices = (0..step_dec.len()).collect::<Vec<_>>();
         indices.sort_unstable_by(|&i, &j| step_dec[j].partial_cmp(&step_dec[i]).unwrap());
         indices.truncate(k);
 
-        let rng = &mut rand::rng();
-        let idx = indices.choose(rng).unwrap();
-        *idx
+        indices[random % indices.len()]
     }
 
     fn top_p(&self, step_dec: &ndarray::ArrayView1<f64>, top_p: f64, temperature: f64) -> usize {
+        let random = generate_random(&step_dec.to_vec());
         let step_dec = step_dec.exp() / temperature;
         let sum = step_dec.sum();
         let step_dec = step_dec / sum;
@@ -282,10 +310,9 @@ impl S2s {
             cumsum += sorted[i].1;
             i += 1;
         }
-        let candidates = &sorted[..i].iter().map(|(i, _)| i).collect::<Vec<_>>();
-        let rng = &mut rand::rng();
-        let idx = candidates.choose(rng).unwrap();
-        **idx
+        let candidates = sorted[..i].iter().map(|(i, _)| *i).collect::<Vec<_>>();
+
+        candidates[random % candidates.len()]
     }
 
     fn decode(&self, x: &ndarray::ArrayView1<f64>) -> usize {

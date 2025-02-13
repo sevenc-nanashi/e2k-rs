@@ -1,0 +1,8 @@
+version: "3"
+
+tasks:
+  build:
+    cmds:
+      - rm -rf pkg
+      - wasm-pack build -t web
+      - cd js && pnpm run build

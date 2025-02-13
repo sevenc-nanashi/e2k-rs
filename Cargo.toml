@@ -3,5 +3,8 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = ["crates/e2k-rs"]
+members = ["crates/e2k-js", "crates/e2k-rs"]
 resolver = "2"
+
+[workspace.dependencies]
+e2k = { path = "crates/e2k-rs" }

@@ -1,0 +1,43 @@
+{
+  "name": "e2k",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "build": "run-s build:js build:ts",
+    "build:js": "tsx ./build.ts",
+    "build:ts": "tsc -p tsconfig.lib.json",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "test": "node --test --experimental-strip-types ./tests/*.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./sync": {
+      "import": "./dist/sync.js",
+      "types": "./dist/sync.d.ts"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^22.13.3",
+    "npm-run-all2": "^7.0.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@biomejs/biome"
+    ]
+  }
+}
