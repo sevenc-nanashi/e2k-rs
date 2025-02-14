@@ -1,7 +1,7 @@
 {
   "name": "e2k",
-  "version": "0.1.0",
-  "description": "",
+  "version": "0.1.1",
+  "description": "英単語から読みを推論するライブラリ（Patchethium/e2kのRust実装）",
   "scripts": {
     "build": "run-s build:js build:ts",
     "build:js": "tsx ./build.ts",
@@ -19,7 +19,9 @@
   ],
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
