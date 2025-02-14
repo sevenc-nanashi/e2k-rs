@@ -32,6 +32,7 @@
     "@biomejs/biome": "1.9.4",
     "@types/node": "^22.13.3",
     "npm-run-all2": "^7.0.2",
+    "tsdown": "^0.5.9",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   },
