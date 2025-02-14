@@ -1,5 +1,5 @@
 import test from "node:test";
-import { C2k, P2k } from "../src/index.ts";
+import { C2k, P2k } from "../dist/index.js";
 
 test("C2k", async () => {
   const c2k = await C2k.create(100);
