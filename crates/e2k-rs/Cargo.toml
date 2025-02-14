@@ -8,7 +8,7 @@ description = "英単語から読みを推論するライブラリ（Patchethium
 documentation = "https://docs.rs/e2k"
 repository = "https://github.com/sevenc-nanashi/e2k-rs"
 
-include = ["!*", "/README.md", "/LICENSE", "/src/**/*"]
+include = ["!*", "/README.md", "/LICENSE", "/src/**/*", "!/src/**/*.safetensors"]
 
 [lib]
 crate-type = ["rlib"]
@@ -43,3 +43,6 @@ rand = "0.9.0"
 [dev-dependencies]
 criterion = "0.5.1"
 dialoguer = "0.11.0"
+
+[build-dependencies]
+brotli-decompressor = "4.0.2"
