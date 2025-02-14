@@ -25,9 +25,9 @@ pub struct StrategyTopK {
 #[educe(Default)]
 pub struct StrategyTopP {
     #[educe(Default(expression = 0.9))]
-    pub top_p: f64,
+    pub top_p: f32,
     #[educe(Default(expression = 1.0))]
-    pub temperature: f64,
+    pub temperature: f32,
 }
 
 #[cfg(any(
@@ -37,10 +37,16 @@ pub struct StrategyTopP {
 fn generate_random<T: num_traits::ToBytes>(_data: &[T]) -> usize {
     use rand::Rng;
     let mut rng = rand::rng();
-    rng.random::<f64>().to_bits().wrapping_rem(usize::MAX as u64) as usize
+    rng.random::<f64>()
+        .to_bits()
+        .wrapping_rem(usize::MAX as u64) as usize
 }
 
-#[cfg(all(target_arch = "wasm32", target_os = "unknown", not(feature = "getrandom_on_wasm32_unknown")))]
+#[cfg(all(
+    target_arch = "wasm32",
+    target_os = "unknown",
+    not(feature = "getrandom_on_wasm32_unknown")
+))]
 fn generate_random<T: num_traits::ToBytes>(data: &[T]) -> usize {
     use std::hash::Hasher;
 
@@ -77,19 +83,33 @@ impl C2k {
     ///
     /// max_len: 読みの最大長。
     pub fn new(max_len: usize) -> Self {
-        static MODEL: &[u8] = include_bytes!("./models/c2k.e2km");
-        let weights = crate::model::Model::new(MODEL);
+        static MODEL: &[u8] = include_bytes!("./models/model-c2k.safetensors");
+        let weights = safetensors::SafeTensors::deserialize(MODEL).expect("Model is corrupted");
         let inner = BaseE2k {
             s2s: S2s::new(weights, max_len),
             in_table: constants::ASCII_ENTRIES
                 .iter()
                 .enumerate()
-                .map(|(i, &c)| (c.chars().next().unwrap(), i))
+                .map(|(i, &c)| {
+                    (
+                        c.chars()
+                            .next()
+                            .expect("Unreachable: There should be no empty string"),
+                        i,
+                    )
+                })
                 .collect(),
             out_table: constants::KANAS
                 .iter()
                 .enumerate()
-                .map(|(i, &c)| (i, c.chars().next().unwrap()))
+                .map(|(i, &c)| {
+                    (
+                        i,
+                        c.chars()
+                            .next()
+                            .expect("Unreachable: There should be no empty string"),
+                    )
+                })
                 .collect(),
         };
         Self { inner }
@@ -125,8 +145,8 @@ impl P2k {
     ///
     /// max_len: 読みの最大長。
     pub fn new(max_len: usize) -> Self {
-        static MODEL: &[u8] = include_bytes!("./models/p2k.e2km");
-        let weights = crate::model::Model::new(MODEL);
+        static MODEL: &[u8] = include_bytes!("./models/model-p2k.safetensors");
+        let weights = safetensors::SafeTensors::deserialize(MODEL).expect("Model is corrupted");
         let inner = BaseE2k {
             s2s: S2s::new(weights, max_len),
             in_table: constants::EN_PHONES
@@ -137,7 +157,14 @@ impl P2k {
             out_table: constants::KANAS
                 .iter()
                 .enumerate()
-                .map(|(i, &c)| (i, c.chars().next().unwrap()))
+                .map(|(i, &c)| {
+                    (
+                        i,
+                        c.chars()
+                            .next()
+                            .expect("Unreachable: There should be no empty string"),
+                    )
+                })
                 .collect(),
         };
         Self { inner }
@@ -203,64 +230,78 @@ struct S2s {
     strategy: Strategy,
 }
 
+fn get_array_f16<E, D>(
+    weights: &safetensors::SafeTensors,
+    key: &str,
+) -> ndarray::ArrayBase<ndarray::OwnedRepr<E>, D>
+where
+    E: ndarray_safetensors::Float16ConversionSupportedElement,
+    D: ndarray::Dimension,
+{
+    ndarray_safetensors::parse_fp16_tensor_view_data(
+        &weights
+            .tensor(key)
+            .unwrap_or_else(|e| panic!("model corrupted: {} not found, {:?}", key, e)),
+    )
+    .unwrap_or_else(|e| panic!("model corrupted: failed to parse {}, {:?}", key, e))
+    .into_dimensionality()
+    .unwrap_or_else(|e| panic!("model corrupted: dimension mismatch in {}, {:?}", key, e))
+}
+
 impl S2s {
-    fn new(weights: crate::model::Model, max_len: usize) -> Self {
-        let e_emb = layers::Embedding::new(
-            weights
-                .get_array::<f64, ndarray::Ix2>("e_emb.weight")
-                .unwrap(),
-        );
-        let k_emb = layers::Embedding::new(weights.get_array("k_emb.weight").unwrap());
+    fn new(weights: safetensors::SafeTensors, max_len: usize) -> Self {
+        let e_emb = layers::Embedding::new(get_array_f16(&weights, "e_emb.weight"));
+        let k_emb = layers::Embedding::new(get_array_f16(&weights, "k_emb.weight"));
         let encoder = layers::Gru::new(
             layers::GruCell::new(
-                weights.get_array("encoder.weight_ih_l0").unwrap(),
-                weights.get_array("encoder.weight_hh_l0").unwrap(),
-                weights.get_array("encoder.bias_ih_l0").unwrap(),
-                weights.get_array("encoder.bias_hh_l0").unwrap(),
+                get_array_f16(&weights, "encoder.weight_ih_l0"),
+                get_array_f16(&weights, "encoder.weight_hh_l0"),
+                get_array_f16(&weights, "encoder.bias_ih_l0"),
+                get_array_f16(&weights, "encoder.bias_hh_l0"),
             ),
             false,
         );
         let encoder_reverse = layers::Gru::new(
             layers::GruCell::new(
-                weights.get_array("encoder.weight_ih_l0_reverse").unwrap(),
-                weights.get_array("encoder.weight_hh_l0_reverse").unwrap(),
-                weights.get_array("encoder.bias_ih_l0_reverse").unwrap(),
-                weights.get_array("encoder.bias_hh_l0_reverse").unwrap(),
+                get_array_f16(&weights, "encoder.weight_ih_l0_reverse"),
+                get_array_f16(&weights, "encoder.weight_hh_l0_reverse"),
+                get_array_f16(&weights, "encoder.bias_ih_l0_reverse"),
+                get_array_f16(&weights, "encoder.bias_hh_l0_reverse"),
             ),
             true,
         );
         let encoder_fc = layers::Linear::new(
-            weights.get_array("encoder_fc.0.weight").unwrap(),
-            weights.get_array("encoder_fc.0.bias").unwrap(),
+            get_array_f16(&weights, "encoder_fc.0.weight"),
+            get_array_f16(&weights, "encoder_fc.0.bias"),
         );
         let pre_decoder = layers::Gru::new(
             layers::GruCell::new(
-                weights.get_array("pre_decoder.weight_ih_l0").unwrap(),
-                weights.get_array("pre_decoder.weight_hh_l0").unwrap(),
-                weights.get_array("pre_decoder.bias_ih_l0").unwrap(),
-                weights.get_array("pre_decoder.bias_hh_l0").unwrap(),
+                get_array_f16(&weights, "pre_decoder.weight_ih_l0"),
+                get_array_f16(&weights, "pre_decoder.weight_hh_l0"),
+                get_array_f16(&weights, "pre_decoder.bias_ih_l0"),
+                get_array_f16(&weights, "pre_decoder.bias_hh_l0"),
             ),
             false,
         );
         let post_decoder = layers::Gru::new(
             layers::GruCell::new(
-                weights.get_array("post_decoder.weight_ih_l0").unwrap(),
-                weights.get_array("post_decoder.weight_hh_l0").unwrap(),
-                weights.get_array("post_decoder.bias_ih_l0").unwrap(),
-                weights.get_array("post_decoder.bias_hh_l0").unwrap(),
+                get_array_f16(&weights, "post_decoder.weight_ih_l0"),
+                get_array_f16(&weights, "post_decoder.weight_hh_l0"),
+                get_array_f16(&weights, "post_decoder.bias_ih_l0"),
+                get_array_f16(&weights, "post_decoder.bias_hh_l0"),
             ),
             false,
         );
         let attn = layers::Mha::new(
-            weights.get_array("attn.in_proj_weight").unwrap(),
-            weights.get_array("attn.in_proj_bias").unwrap(),
-            weights.get_array("attn.out_proj.weight").unwrap(),
-            weights.get_array("attn.out_proj.bias").unwrap(),
+            get_array_f16(&weights, "attn.in_proj_weight"),
+            get_array_f16(&weights, "attn.in_proj_bias"),
+            get_array_f16(&weights, "attn.out_proj.weight"),
+            get_array_f16(&weights, "attn.out_proj.bias"),
             4,
         );
         let fc = layers::Linear::new(
-            weights.get_array("fc.weight").unwrap(),
-            weights.get_array("fc.bias").unwrap(),
+            get_array_f16(&weights, "fc.weight"),
+            get_array_f16(&weights, "fc.bias"),
         );
         let strategy = Strategy::Greedy;
         Self {
@@ -278,7 +319,7 @@ impl S2s {
         }
     }
 
-    fn greedy(&self, step_dec: &ndarray::ArrayView1<f64>) -> usize {
+    fn greedy(&self, step_dec: &ndarray::ArrayView1<f32>) -> usize {
         let max = *step_dec
             .iter()
             .max_by(|a, b| a.partial_cmp(b).unwrap())
@@ -287,7 +328,7 @@ impl S2s {
         argmax
     }
 
-    fn top_k(&self, step_dec: &ndarray::ArrayView1<f64>, k: usize) -> usize {
+    fn top_k(&self, step_dec: &ndarray::ArrayView1<f32>, k: usize) -> usize {
         let step_dec = step_dec.to_vec();
         let random = generate_random(&step_dec);
         let mut indices = (0..step_dec.len()).collect::<Vec<_>>();
@@ -297,7 +338,7 @@ impl S2s {
         indices[random % indices.len()]
     }
 
-    fn top_p(&self, step_dec: &ndarray::ArrayView1<f64>, top_p: f64, temperature: f64) -> usize {
+    fn top_p(&self, step_dec: &ndarray::ArrayView1<f32>, top_p: f32, temperature: f32) -> usize {
         let random = generate_random(&step_dec.to_vec());
         let step_dec = step_dec.exp() / temperature;
         let sum = step_dec.sum();
@@ -315,7 +356,7 @@ impl S2s {
         candidates[random % candidates.len()]
     }
 
-    fn decode(&self, x: &ndarray::ArrayView1<f64>) -> usize {
+    fn decode(&self, x: &ndarray::ArrayView1<f32>) -> usize {
         match &self.strategy {
             Strategy::Greedy => self.greedy(x),
             Strategy::TopK(StrategyTopK { k }) => self.top_k(x, *k),
@@ -337,8 +378,8 @@ impl S2s {
         let enc_out = self.encoder_fc.forward_2d(&enc_out.view());
         let enc_out = enc_out.mapv(|x| x.tanh());
         let mut result = vec![constants::SOS_IDX];
-        let mut h1: Option<ndarray::Array1<f64>> = None;
-        let mut h2: Option<ndarray::Array1<f64>> = None;
+        let mut h1: Option<ndarray::Array1<f32>> = None;
+        let mut h2: Option<ndarray::Array1<f32>> = None;
         for _ in 0..self.max_len {
             let dec_emb = self
                 .k_emb

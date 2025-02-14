@@ -16,11 +16,11 @@ struct Args {
 
     /// Top-PのP。
     #[clap(short = 'p', long, default_value = "0.9")]
-    top_p: f64,
+    top_p: f32,
 
     /// Top-Pの温度。
     #[clap(short = 't', long, default_value = "1.0")]
-    temperature: f64,
+    temperature: f32,
 }
 
 #[derive(ValueEnum, Debug, Clone)]

@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ndarray::prelude::*;
 
-pub(crate) fn sigmoid_1d(x: Array1<f64>) -> Array1<f64> {
+pub(crate) fn sigmoid_1d(x: Array1<f32>) -> Array1<f32> {
     x.map(|x| 1.0 / (1.0 + (-x).exp()))
 }
 
@@ -59,19 +59,19 @@ macro_rules! split_ndarray_owned {
 
 #[derive(Debug)]
 pub(crate) struct Linear {
-    weight: ndarray::Array2<f64>,
-    bias: ndarray::Array1<f64>,
+    weight: ndarray::Array2<f32>,
+    bias: ndarray::Array1<f32>,
 }
 
 impl Linear {
-    pub fn new(weight: ndarray::Array2<f64>, bias: ndarray::Array1<f64>) -> Self {
+    pub fn new(weight: ndarray::Array2<f32>, bias: ndarray::Array1<f32>) -> Self {
         Self { weight, bias }
     }
-    pub fn forward_2d(&self, input: &ndarray::ArrayView2<f64>) -> ndarray::Array2<f64> {
+    pub fn forward_2d(&self, input: &ndarray::ArrayView2<f32>) -> ndarray::Array2<f32> {
         let output = input.dot(&self.weight.t());
         output + &self.bias
     }
-    pub fn forward_1d(&self, input: &ndarray::ArrayView1<f64>) -> ndarray::Array1<f64> {
+    pub fn forward_1d(&self, input: &ndarray::ArrayView1<f32>) -> ndarray::Array1<f32> {
         let output = input.dot(&self.weight.t());
         output + &self.bias
     }
@@ -79,14 +79,14 @@ impl Linear {
 
 #[derive(Debug)]
 pub(crate) struct Embedding {
-    weight: ndarray::Array2<f64>,
+    weight: ndarray::Array2<f32>,
 }
 
 impl Embedding {
-    pub fn new(weight: ndarray::Array2<f64>) -> Self {
+    pub fn new(weight: ndarray::Array2<f32>) -> Self {
         Self { weight }
     }
-    pub fn forward(&self, input: &ndarray::Array1<usize>) -> ndarray::Array2<f64> {
+    pub fn forward(&self, input: &ndarray::Array1<usize>) -> ndarray::Array2<f32> {
         ndarray::stack(
             ndarray::Axis(0),
             &input
@@ -106,15 +106,15 @@ pub(crate) struct Mha {
     v_proj: Linear,
     out_proj: Linear,
     n_heads: usize,
-    scale: f64,
+    scale: f32,
 }
 
 impl Mha {
     pub(crate) fn new(
-        in_proj_weight: ndarray::Array2<f64>,
-        in_proj_bias: ndarray::Array1<f64>,
-        out_proj_weight: ndarray::Array2<f64>,
-        out_proj_bias: ndarray::Array1<f64>,
+        in_proj_weight: ndarray::Array2<f32>,
+        in_proj_bias: ndarray::Array1<f32>,
+        out_proj_weight: ndarray::Array2<f32>,
+        out_proj_bias: ndarray::Array1<f32>,
         num_heads: usize,
     ) -> Self {
         let (q_w, k_w, v_w) = split_ndarray!(&in_proj_weight, 3, ndarray::Axis(0));
@@ -124,7 +124,7 @@ impl Mha {
         let k_proj = Linear::new(k_w.to_owned(), k_b.to_owned());
         let v_proj = Linear::new(v_w.to_owned(), v_b.to_owned());
         let out_proj = Linear::new(out_proj_weight, out_proj_bias);
-        let scale = (dim as f64).sqrt();
+        let scale = (dim as f32).sqrt();
         Self {
             q_proj,
             k_proj,
@@ -137,10 +137,10 @@ impl Mha {
 
     pub(crate) fn forward(
         &self,
-        query: &ndarray::ArrayView2<f64>,
-        key: &ndarray::ArrayView2<f64>,
-        value: &ndarray::ArrayView2<f64>,
-    ) -> ndarray::Array2<f64> {
+        query: &ndarray::ArrayView2<f32>,
+        key: &ndarray::ArrayView2<f32>,
+        value: &ndarray::ArrayView2<f32>,
+    ) -> ndarray::Array2<f32> {
         let q = self.q_proj.forward_2d(query);
         let k = self.k_proj.forward_2d(key);
         let v = self.v_proj.forward_2d(value);
@@ -176,10 +176,10 @@ pub(crate) struct GruCell {
 
 impl GruCell {
     pub(crate) fn new(
-        weight_ih: ndarray::Array2<f64>,
-        weight_hh: ndarray::Array2<f64>,
-        bias_ih: ndarray::Array1<f64>,
-        bias_hh: ndarray::Array1<f64>,
+        weight_ih: ndarray::Array2<f32>,
+        weight_hh: ndarray::Array2<f32>,
+        bias_ih: ndarray::Array1<f32>,
+        bias_hh: ndarray::Array1<f32>,
     ) -> Self {
         let ih = Linear::new(weight_ih, bias_ih);
         let hh = Linear::new(weight_hh, bias_hh);
@@ -188,9 +188,9 @@ impl GruCell {
 
     pub(crate) fn forward(
         &self,
-        input: &ndarray::ArrayView1<f64>,
-        hidden: &Option<ndarray::ArrayView1<f64>>,
-    ) -> ndarray::Array1<f64> {
+        input: &ndarray::ArrayView1<f32>,
+        hidden: &Option<ndarray::ArrayView1<f32>>,
+    ) -> ndarray::Array1<f32> {
         let hidden = hidden.map_or_else(
             || ndarray::Array1::zeros((self.hh.weight.shape()[self.hh.weight.ndim() - 1],)),
             |x| x.to_owned(),
@@ -226,9 +226,9 @@ impl Gru {
 
     pub(crate) fn forward(
         &self,
-        input: &ndarray::ArrayView2<f64>,
-        hidden: Option<ndarray::ArrayView1<f64>>,
-    ) -> (ndarray::Array2<f64>, ndarray::Array1<f64>) {
+        input: &ndarray::ArrayView2<f32>,
+        hidden: Option<ndarray::ArrayView1<f32>>,
+    ) -> (ndarray::Array2<f32>, ndarray::Array1<f32>) {
         let mut hidden = hidden.map(|x| x.to_owned());
         let input = if self.reverse {
             input.slice(s![..; -1, ..]).to_owned()

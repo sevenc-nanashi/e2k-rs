@@ -6,4 +6,5 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "e2k>=0.1.2",
+    "safetensors>=0.5.2",
 ]

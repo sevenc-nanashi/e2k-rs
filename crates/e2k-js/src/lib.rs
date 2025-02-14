@@ -31,7 +31,7 @@ enum Strategy {
     TopK { k: usize },
     /// Top-P アルゴリズム。
     #[serde(rename_all = "camelCase")]
-    TopP { top_p: f64, temperature: f64 },
+    TopP { top_p: f32, temperature: f32 },
 }
 impl Strategy {
     fn into(self) -> e2k::Strategy {
