@@ -8,3 +8,7 @@ resolver = "2"
 
 [workspace.dependencies]
 e2k = { path = "crates/e2k-rs" }
+
+[profile.release-web]
+inherits = "release"
+panic = "abort"

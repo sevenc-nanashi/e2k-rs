@@ -7,7 +7,7 @@
     "build:js": "tsx ./build.ts",
     "build:ts": "tsc -p tsconfig.lib.json",
     "lint": "biome check",
-    "lint:fix": "biome check --write",
+    "lint:fix": "biome check --write --unsafe",
     "test": "node --test --experimental-strip-types ./tests/*.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -37,8 +37,6 @@
     "typescript": "^5.7.3"
   },
   "pnpm": {
-    "onlyBuiltDependencies": [
-      "@biomejs/biome"
-    ]
+    "onlyBuiltDependencies": ["@biomejs/biome"]
   }
 }

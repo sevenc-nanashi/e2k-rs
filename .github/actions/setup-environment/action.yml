@@ -1,0 +1,40 @@
+name: "Setup environment"
+description: |
+  依存関係のインストールなどを行う。
+runs:
+  using: "composite"
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+        cache: "pnpm"
+
+    - name: Setup uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Setup Rust
+      shell: bash
+      run: |
+        rustup component add clippy
+        rustup component add rustfmt
+
+    - name: Setup Python
+      shell: bash
+      working-directory: crates/e2k-rs/tasks
+      run: |
+        uv python install
+        uv sync
+
+    - name: Cache Rust
+      uses: swatinem/rust-cache@v2
+
+    - name: Install wasm-pack
+      shell: bash
+      run: cargo install --git https://github.com/rustwasm/wasm-pack.git --rev 32e52ca
+
+    - name: Install Task
+      uses: arduino/setup-task@v2
