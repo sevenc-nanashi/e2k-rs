@@ -3,6 +3,11 @@ name = "e2k"
 version = "0.1.0"
 edition = "2021"
 
+license = "MIT"
+description = "英単語から読みを推論するライブラリ（Patchethium/e2kのRust実装）"
+documentation = "https://docs.rs/e2k"
+repository = "https://github.com/sevenc-nanashi/e2k-rs"
+
 [lib]
 crate-type = ["rlib"]
 
