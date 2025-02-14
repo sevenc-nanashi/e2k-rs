@@ -8,3 +8,10 @@ dependencies = [
     "e2k>=0.1.2",
     "safetensors>=0.5.2",
 ]
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.10.0",
+    "pytest>=8.3.4",
+    "pytest-benchmark>=5.1.0",
+]

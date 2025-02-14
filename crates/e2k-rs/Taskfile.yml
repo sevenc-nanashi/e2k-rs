@@ -8,3 +8,8 @@ tasks:
   generate_models:
     cmds:
       - cd tasks && uv run python3 ./generate_models.py
+  benchmark:
+    cmds:
+      - cd tasks && uv run pytest --benchmark-json=benchmark.json
+      - cargo bench
+      - cd tasks && uv run python3 ./plot_benchmark.py

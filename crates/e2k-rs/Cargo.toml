@@ -6,6 +6,10 @@ edition = "2021"
 [lib]
 crate-type = ["rlib"]
 
+[[bench]]
+name = "benchmark"
+harness = false
+
 [features]
 getrandom_on_wasm32_unknown = ["dep:rand", "getrandom/wasm_js"]
 
@@ -26,4 +30,5 @@ ndarray-safetensors = "0.2.2"
 rand = "0.9.0"
 
 [dev-dependencies]
+criterion = "0.5.1"
 dialoguer = "0.11.0"
