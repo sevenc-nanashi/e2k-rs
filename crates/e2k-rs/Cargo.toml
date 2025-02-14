@@ -8,6 +8,8 @@ description = "英単語から読みを推論するライブラリ（Patchethium
 documentation = "https://docs.rs/e2k"
 repository = "https://github.com/sevenc-nanashi/e2k-rs"
 
+include = ["!*", "/README.md", "/LICENSE", "/src/**/*"]
+
 [lib]
 crate-type = ["rlib"]
 

@@ -42,7 +42,7 @@ runs:
 
     - name: Install wasm-pack
       shell: bash
-      run: cargo binstall wasm-pack
+      run: cargo binstall wasm-pack --force
 
     - name: Install Task
       uses: arduino/setup-task@v2
