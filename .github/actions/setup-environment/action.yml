@@ -29,6 +29,11 @@ runs:
         uv python install
         uv sync
 
+    - name: Setup Node packages
+      shell: bash
+      run: |
+        pnpm i
+
     - name: Cache Rust
       uses: swatinem/rust-cache@v2
 
