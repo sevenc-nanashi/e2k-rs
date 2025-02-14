@@ -61,7 +61,7 @@ fn generate_random<T: num_traits::ToBytes>(data: &[T]) -> usize {
     }
 
     let data = hasher.finish() as usize;
-    HASH_SEED.store(data, std::sync::atomic::Ordering::Relaxed);
+    HASH_SEED.fetch_add(data, std::sync::atomic::Ordering::Relaxed);
     data
 }
 
