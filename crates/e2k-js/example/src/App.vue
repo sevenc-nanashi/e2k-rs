@@ -79,4 +79,19 @@ main {
   }
   cursor: pointer;
 }
+@media (prefers-color-scheme: dark) {
+  .main-input {
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #666;
+  }
+  .main-submit {
+    background-color: #444;
+    color: #fff;
+    border: 1px solid #666;
+    &:hover {
+      background-color: #555;
+    }
+  }
+}
 </style>
