@@ -1,4 +1,4 @@
-# e2k-js [![NPM Version](https://img.shields.io/npm/v/e2k)](https://npmjs.org/package/e2k) [![jsDocs.io](https://img.shields.io/badge/jsDocs.io-reference-blue)](https://www.jsdocs.io/package/query-registry)
+# e2k-js [![NPM Version](https://img.shields.io/npm/v/%40sevenc-nanashi%2Fe2k)](https://npmjs.org/package/@sevenc-nanashi/e2k) [![jsDocs.io](https://img.shields.io/badge/jsDocs.io-reference-blue)](https://www.jsdocs.io/package/@sevenc-nanashi/e2k)
 
 英単語から読みを推論するライブラリ。
 [Patchethium氏のe2k](https://github.com/Patchethium/e2k)をRustに移植した[e2k-rs](https://github.com/sevenc-nanashi/e2k-rs)をwasmにしたものです。
