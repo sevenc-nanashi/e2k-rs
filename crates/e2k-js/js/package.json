@@ -18,11 +18,7 @@
     }
   ],
   "type": "module",
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "README.md", "LICENSE"],
   "exports": {
     ".": {
       "import": "./dist/index.js",
