@@ -33,7 +33,7 @@ const pronunciation = ["K", "AA1", "N", "S", "T", "AH0", "N", "T", "S"];
 // e2k/syncを使う場合：
 // const p2k = new P2k(32);
 const p2k = await P2k.create(32);
-const dst = p2k.infer(&pronunciation);
+const dst = p2k.infer(pronunciation);
 console.log(dst); // "コンスタンツ"
 ```
 
