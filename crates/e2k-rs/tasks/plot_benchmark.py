@@ -17,7 +17,9 @@ python_p2k_benchmarks = [b for b in python_benchmarks if b["name"] == "test_p2k"
 
 # unit: ns/iter
 rust_c2k_benchmarks = rust_c2k_benchmark["times"]
+rust_c2k_iters = rust_c2k_benchmark["iters"]
 rust_p2k_benchmarks = rust_p2k_benchmark["times"]
+rust_p2k_iters = rust_p2k_benchmark["iters"]
 
 fig = plt.figure(figsize=(12, 6))
 
@@ -29,7 +31,7 @@ c2k_hist_fig.hist(
     label="Python C2K",
 )
 c2k_hist_fig.hist(
-    list(map(lambda x: x / 1000 / 1000, rust_c2k_benchmarks)),
+    [x / 1000 / 1000 / i for x, i in zip(rust_c2k_benchmarks, rust_c2k_iters)],
     bins=10,
     alpha=0.5,
     label="Rust C2K",
@@ -46,7 +48,7 @@ c2k_fig.scatter(
 )
 c2k_fig.scatter(
     range(len(rust_c2k_benchmarks)),
-    list(map(lambda x: x / 1000 / 1000, rust_c2k_benchmarks)),
+    [x / 1000 / 1000 / i for x, i in zip(rust_c2k_benchmarks, rust_c2k_iters)],
     label="Rust C2K",
 )
 c2k_fig.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.0f}ms"))
@@ -61,7 +63,7 @@ p2k_hist_fig.hist(
     label="Python P2K",
 )
 p2k_hist_fig.hist(
-    list(map(lambda x: x / 1000 / 1000, rust_p2k_benchmarks)),
+    [x / 1000 / 1000 / i for x, i in zip(rust_p2k_benchmarks, rust_p2k_iters)],
     bins=10,
     alpha=0.5,
     label="Rust P2K",
@@ -78,7 +80,7 @@ p2k_fig.scatter(
 )
 p2k_fig.scatter(
     range(len(rust_p2k_benchmarks)),
-    list(map(lambda x: x / 1000 / 1000, rust_p2k_benchmarks)),
+    [x / 1000 / 1000 / i for x, i in zip(rust_p2k_benchmarks, rust_p2k_iters)],
     label="Rust P2K",
 )
 p2k_fig.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.0f}ms"))
