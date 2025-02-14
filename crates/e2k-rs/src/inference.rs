@@ -1,5 +1,6 @@
 use crate::{constants, layers};
 use educe::Educe;
+use itertools::Itertools;
 use std::{collections::HashMap, hash::Hash};
 
 /// デコードに使うアルゴリズム。
@@ -222,9 +223,13 @@ struct BaseE2k<I: Hash + Eq, O: Clone> {
 
 impl<I: Hash + Eq, O: Clone> BaseE2k<I, O> {
     fn infer(&self, input: &[I]) -> Vec<O> {
+        let source = input.iter().filter_map(|c| self.in_table.get(c).copied()).collect_vec();
+        if source.is_empty() {
+            return Vec::new();
+        }
         let source = [constants::SOS_IDX]
             .into_iter()
-            .chain(input.iter().filter_map(|c| self.in_table.get(c).copied()))
+            .chain(source)
             .chain([constants::EOS_IDX]);
         let source = ndarray::Array1::from_iter(source);
         let target = self.s2s.forward(&source);
