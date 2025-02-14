@@ -4,6 +4,5 @@ tasks:
   build:
     cmds:
       - rm -rf pkg
-      # cargo install --git https://github.com/rustwasm/wasm-pack.git --rev 32e52ca
-      - wasm-pack build -t web --profile release-web
+      - wasm-pack build -t web
       - cd js && pnpm run build

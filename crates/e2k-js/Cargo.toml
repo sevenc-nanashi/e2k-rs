@@ -11,6 +11,3 @@ wasm-bindgen = "0.2.100"
 e2k.workspace = true
 serde-wasm-bindgen = "0.6.5"
 serde = { version = "1.0.217", features = ["derive"] }
-
-[profile.release]
-opt-level = "z"

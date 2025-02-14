@@ -4,6 +4,7 @@ import e2k.inference
 import os
 import numpy as np
 import safetensors.numpy as safetensors
+import brotli
 
 dirname = os.path.dirname(__file__)
 
@@ -18,3 +19,11 @@ for file, dest in [
     print(f"Saved {file} to {dest}")
     for key in loaded.files:
         print(f"  {key}: dtype={loaded[key].dtype}, shape={loaded[key].shape}")
+
+    # モデルの圧縮
+    with open(dest, "rb") as f:
+        data = f.read()
+    compressed = brotli.compress(data)
+    with open(dest + ".br", "wb") as f:
+        f.write(compressed)
+    print(f"Compressed {dest} to {dest}.br, ratio={len(compressed) / len(data):.2f}")

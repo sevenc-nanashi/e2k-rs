@@ -83,8 +83,21 @@ impl C2k {
     ///
     /// max_len: 読みの最大長。
     pub fn new(max_len: usize) -> Self {
+        #[cfg(feature = "compress_model")]
+        static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
+            use std::io::Read;
+            let model = include_bytes!("./models/model-c2k.safetensors.br");
+            let mut input = brotli_decompressor::Decompressor::new(
+                model.as_slice(),
+                4096, /* buffer size */
+            );
+            let mut buf = Vec::new();
+            input.read_to_end(&mut buf).expect("Model is corrupted");
+            buf
+        });
+        #[cfg(not(feature = "compress_model"))]
         static MODEL: &[u8] = include_bytes!("./models/model-c2k.safetensors");
-        let weights = safetensors::SafeTensors::deserialize(MODEL).expect("Model is corrupted");
+        let weights = safetensors::SafeTensors::deserialize(&MODEL).expect("Model is corrupted");
         let inner = BaseE2k {
             s2s: S2s::new(weights, max_len),
             in_table: constants::ASCII_ENTRIES
@@ -145,8 +158,21 @@ impl P2k {
     ///
     /// max_len: 読みの最大長。
     pub fn new(max_len: usize) -> Self {
+        #[cfg(feature = "compress_model")]
+        static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
+            use std::io::Read;
+            let model = include_bytes!("./models/model-p2k.safetensors.br");
+            let mut input = brotli_decompressor::Decompressor::new(
+                model.as_slice(),
+                4096, /* buffer size */
+            );
+            let mut buf = Vec::new();
+            input.read_to_end(&mut buf).expect("Model is corrupted");
+            buf
+        });
+        #[cfg(not(feature = "compress_model"))]
         static MODEL: &[u8] = include_bytes!("./models/model-p2k.safetensors");
-        let weights = safetensors::SafeTensors::deserialize(MODEL).expect("Model is corrupted");
+        let weights = safetensors::SafeTensors::deserialize(&MODEL).expect("Model is corrupted");
         let inner = BaseE2k {
             s2s: S2s::new(weights, max_len),
             in_table: constants::EN_PHONES

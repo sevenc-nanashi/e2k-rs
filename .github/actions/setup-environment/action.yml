@@ -32,9 +32,12 @@ runs:
     - name: Cache Rust
       uses: swatinem/rust-cache@v2
 
+    - name: Install cargo-binstall
+      uses: cargo-bins/cargo-binstall@main
+
     - name: Install wasm-pack
       shell: bash
-      run: cargo install --git https://github.com/rustwasm/wasm-pack.git --rev 32e52ca
+      run: cargo binstall wasm-pack
 
     - name: Install Task
       uses: arduino/setup-task@v2

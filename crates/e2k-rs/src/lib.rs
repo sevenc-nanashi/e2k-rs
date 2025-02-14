@@ -22,9 +22,13 @@
 //! ```
 //!
 //! ## Features
+//! ### `compress_model`
+//! brotliを使用してモデルを圧縮します。
+//! このfeatureはデフォルトで有効です。
+//!
 //! ### `getrandom_on_wasm32_unknown`
 //! wasm32-unknown-unknownでのTopK/TopPサンプリングに`getrandom`を使用します。
-//! この機能を有効にしてコンパイルするには[getrandomのドキュメント](https://docs.rs/getrandom/latest/getrandom/#webassembly-support)を参照してください。
+//! このfeatureを有効にしてコンパイルするには[getrandomのドキュメント](https://docs.rs/getrandom/latest/getrandom/#webassembly-support)を参照してください。
 //! オフの場合、Hashと適当な値を使用してサンプリングします。
 //!
 
