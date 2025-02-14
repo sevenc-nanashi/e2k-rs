@@ -18,7 +18,7 @@
 //! let pronunciation = ["K", "AA1", "N", "S", "T", "AH0", "N", "T", "S"];
 //! let p2k = e2k::P2k::new(32);
 //! let dst = p2k.infer(&pronunciation);
-//! dbg!(dst);
+//! dbg!(dst); // "コンスタンツ"
 //! ```
 //!
 //! ## Features

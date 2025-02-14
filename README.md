@@ -2,11 +2,10 @@
 
 [Patchethium氏のe2k](https://github.com/Patchethium/e2k)をRustに移植したものです。
 
-## 使い方
+## クレート一覧
 
-```rust
-// TODO
-```
+- `./crates/e2k-rs`：メイン実装（Rust API）。 
+- `./crates/e2k-js`：Wasm + JS API。
 
 ## ライセンス
 

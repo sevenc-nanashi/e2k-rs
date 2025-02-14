@@ -1,5 +1,5 @@
 import { gunzip } from "fflate";
-import { C2k as BaseC2k, P2k as BaseP2k, initSync } from "../../pkg/e2k_js.js";
+import { C2k as BaseC2k, P2k as BaseP2k, initSync } from "./e2k_js.js";
 
 let initializePromise: Promise<void> | undefined;
 

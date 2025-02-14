@@ -14,6 +14,8 @@ await fs.promises.writeFile(
   "./src/e2k_js_bg.wasm.d.ts",
   "declare const wasm: Uint8Array;export default wasm;",
 );
+await fs.promises.copyFile("../pkg/e2k_js.js", "./src/e2k_js.js");
+await fs.promises.copyFile("../pkg/e2k_js.d.ts", "./src/e2k_js.d.ts");
 
 await fs.promises.rm("./dist", { recursive: true, force: true });
 await tsdown.build({
@@ -23,4 +25,6 @@ await tsdown.build({
   },
   outDir: "./dist",
   sourcemap: true,
+  external: ["fflate"],
 });
+await fs.promises.copyFile("../pkg/e2k_js.d.ts", "./dist/e2k_js.d.ts");

@@ -2,13 +2,14 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(typescript_custom_section)]
 const STRATEGY_TS: &'static str = r#"
+/** 推論アルゴリズム */
 export type Strategy = {
     type: "greedy";
 } | {
-    type: "top_k";
+    type: "topK";
     k: number;
 } | {
-    type: "top_p";
+    type: "topP";
     topP: number;
     temperature: number;
 }
@@ -20,16 +21,12 @@ extern "C" {
     pub type JsStrategy;
 }
 
-/// アルゴリズムの種類。
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
-#[serde(rename_all = "snake_case", tag = "type")]
+#[serde(rename_all = "camelCase", tag = "type")]
 enum Strategy {
-    /// Greedy アルゴリズム。
     Greedy,
-    /// Top-K アルゴリズム。
     #[serde(rename_all = "camelCase")]
     TopK { k: usize },
-    /// Top-P アルゴリズム。
     #[serde(rename_all = "camelCase")]
     TopP { top_p: f32, temperature: f32 },
 }

@@ -9,9 +9,18 @@
     "lint": "biome check",
     "lint:fix": "biome check --write --unsafe",
     "test": "node --test --experimental-strip-types ./tests/*.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "run-s build typecheck lint"
   },
+  "licenses": [
+    {
+      "type": "MIT"
+    }
+  ],
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
