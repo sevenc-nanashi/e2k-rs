@@ -2,6 +2,13 @@ use std::path::PathBuf;
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=CARGO_FEATURE_EMBED_MODEL");
+    if std::env::var("CARGO_FEATURE_EMBED_MODEL") == Ok("1".to_string()) {
+        download_models();
+    }
+}
+
+fn download_models() {
     println!("cargo:rerun-if-changed=src/models/model-c2k.safetensors");
     println!("cargo:rerun-if-changed=src/models/model-p2k.safetensors");
     println!("cargo:rerun-if-changed=src/models/model-c2k.safetensors.br");
@@ -20,16 +27,17 @@ fn main() {
         ),
     ] {
         let raw_model = root.join(raw_file);
-        let tmp_dest = root.join(format!("{}.tmp", compressed_file));
         if !raw_model.exists() {
-            download_model(&tmp_dest, url);
-            std::fs::rename(&tmp_dest, &raw_model).unwrap();
+            let tmp_raw_dest = root.join(format!("{}.tmp", raw_file));
+            download_model(&tmp_raw_dest, url);
+            std::fs::rename(&tmp_raw_dest, &raw_model).unwrap();
         }
 
         let compressed_model = root.join(compressed_file);
         if !compressed_model.exists() {
+            let temp_compressed_dest = root.join(format!("{}.tmp", compressed_file));
             let mut raw_model_file = std::fs::File::open(&raw_model).unwrap();
-            let mut compressed_model_file = std::fs::File::create(&tmp_dest).unwrap();
+            let mut compressed_model_file = std::fs::File::create(&temp_compressed_dest).unwrap();
 
             brotli::BrotliCompress(
                 &mut raw_model_file,
@@ -40,6 +48,8 @@ fn main() {
                 },
             )
             .unwrap();
+
+            std::fs::rename(&temp_compressed_dest, &compressed_model).unwrap();
         }
     }
 }

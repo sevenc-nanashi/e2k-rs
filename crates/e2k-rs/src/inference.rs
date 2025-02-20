@@ -66,186 +66,6 @@ fn generate_random<T: num_traits::ToBytes>(data: &[T]) -> usize {
     data
 }
 
-/// 英単語 -> カタカナの変換器。
-pub struct C2k {
-    inner: BaseE2k<char, char>,
-}
-
-impl std::fmt::Debug for C2k {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("C2k").finish()
-    }
-}
-
-impl C2k {
-    /// 新しいインスタンスを生成する。
-    ///
-    /// # Arguments
-    ///
-    /// max_len: 読みの最大長。
-    pub fn new(max_len: usize) -> Self {
-        #[cfg(feature = "compress_model")]
-        static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
-            use std::io::Read;
-            let model = include_bytes!("./models/model-c2k.safetensors.br");
-            let mut input = brotli_decompressor::Decompressor::new(
-                model.as_slice(),
-                4096, /* buffer size */
-            );
-            let mut buf = Vec::new();
-            input.read_to_end(&mut buf).expect("Model is corrupted");
-            buf
-        });
-        #[cfg(not(feature = "compress_model"))]
-        static MODEL: &[u8] = include_bytes!("./models/model-c2k.safetensors");
-        let weights = safetensors::SafeTensors::deserialize(&MODEL).expect("Model is corrupted");
-        let inner = BaseE2k {
-            s2s: S2s::new(weights, max_len),
-            in_table: constants::ASCII_ENTRIES
-                .iter()
-                .enumerate()
-                .map(|(i, &c)| {
-                    (
-                        c.chars()
-                            .next()
-                            .expect("Unreachable: There should be no empty string"),
-                        i,
-                    )
-                })
-                .collect(),
-            out_table: constants::KANAS
-                .iter()
-                .enumerate()
-                .map(|(i, &c)| {
-                    (
-                        i,
-                        c.chars()
-                            .next()
-                            .expect("Unreachable: There should be no empty string"),
-                    )
-                })
-                .collect(),
-        };
-        Self { inner }
-    }
-
-    /// 推論を行う。
-    pub fn infer(&self, input: &str) -> String {
-        let input = input.chars().collect::<Vec<_>>();
-        self.inner.infer(&input).into_iter().collect()
-    }
-
-    /// アルゴリズムを設定する。
-    pub fn set_decode_strategy(&mut self, strategy: Strategy) {
-        self.inner.set_decode_strategy(strategy);
-    }
-}
-
-/// 発音 -> カタカナの変換器。
-pub struct P2k {
-    inner: BaseE2k<String, char>,
-}
-
-impl std::fmt::Debug for P2k {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("P2k").finish()
-    }
-}
-
-impl P2k {
-    /// 新しいインスタンスを生成する。
-    ///
-    /// # Arguments
-    ///
-    /// max_len: 読みの最大長。
-    pub fn new(max_len: usize) -> Self {
-        #[cfg(feature = "compress_model")]
-        static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
-            use std::io::Read;
-            let model = include_bytes!("./models/model-p2k.safetensors.br");
-            let mut input = brotli_decompressor::Decompressor::new(
-                model.as_slice(),
-                4096, /* buffer size */
-            );
-            let mut buf = Vec::new();
-            input.read_to_end(&mut buf).expect("Model is corrupted");
-            buf
-        });
-        #[cfg(not(feature = "compress_model"))]
-        static MODEL: &[u8] = include_bytes!("./models/model-p2k.safetensors");
-        let weights = safetensors::SafeTensors::deserialize(&MODEL).expect("Model is corrupted");
-        let inner = BaseE2k {
-            s2s: S2s::new(weights, max_len),
-            in_table: constants::EN_PHONES
-                .iter()
-                .enumerate()
-                .map(|(i, &c)| (c.to_string(), i))
-                .collect(),
-            out_table: constants::KANAS
-                .iter()
-                .enumerate()
-                .map(|(i, &c)| {
-                    (
-                        i,
-                        c.chars()
-                            .next()
-                            .expect("Unreachable: There should be no empty string"),
-                    )
-                })
-                .collect(),
-        };
-        Self { inner }
-    }
-
-    /// 推論を行う。
-    ///
-    /// # Arguments
-    ///
-    /// input: CMUDictの発音記号。
-    pub fn infer(&self, input: &[&str]) -> String {
-        self.inner
-            .infer(&input.iter().map(|&s| s.to_string()).collect::<Vec<_>>())
-            .into_iter()
-            .collect()
-    }
-
-    /// アルゴリズムを設定する。
-    pub fn set_decode_strategy(&mut self, strategy: Strategy) {
-        self.inner.set_decode_strategy(strategy);
-    }
-}
-
-struct BaseE2k<I: Hash + Eq, O: Clone> {
-    s2s: S2s,
-    in_table: HashMap<I, usize>,
-    out_table: HashMap<usize, O>,
-}
-
-impl<I: Hash + Eq, O: Clone> BaseE2k<I, O> {
-    fn infer(&self, input: &[I]) -> Vec<O> {
-        let source = input.iter().filter_map(|c| self.in_table.get(c).copied()).collect_vec();
-        if source.is_empty() {
-            return Vec::new();
-        }
-        let source = [constants::SOS_IDX]
-            .into_iter()
-            .chain(source)
-            .chain([constants::EOS_IDX]);
-        let source = ndarray::Array1::from_iter(source);
-        let target = self.s2s.forward(&source);
-        target
-            .iter()
-            .skip(1)
-            .take_while(|&&x| x != constants::EOS_IDX)
-            .map(|&x| self.out_table[&x].clone())
-            .collect()
-    }
-
-    fn set_decode_strategy(&mut self, strategy: Strategy) {
-        self.s2s.strategy = strategy;
-    }
-}
-
 struct S2s {
     e_emb: layers::Embedding,
     k_emb: layers::Embedding,
@@ -444,3 +264,219 @@ impl S2s {
         ndarray::Array1::from(result)
     }
 }
+
+/// [C2k] 、 [P2k] の基底となる構造体。
+/// 基本的には[C2k]または[P2k]を使ってください。
+pub struct BaseE2k<I: Hash + Eq, O: Clone> {
+    s2s: S2s,
+    in_table: HashMap<I, usize>,
+    out_table: HashMap<usize, O>,
+}
+
+impl<I: Hash + Eq, O: Clone> BaseE2k<I, O> {
+    /// 新しいインスタンスを生成する。
+    ///
+    /// # Arguments
+    ///
+    /// tensors: モデルの重み。必要な値についてはS2sの実装を参照してください。
+    /// in_table: 入力のテーブル。キーが入力、値がモデルの入力に変換されるインデックス。
+    /// out_table: 出力のテーブル。キーがモデルの出力に変換されるインデックス、値が出力。
+    /// max_len: 読みの最大長。
+    pub fn new(
+        tensors: safetensors::SafeTensors,
+        in_table: HashMap<I, usize>,
+        out_table: HashMap<usize, O>,
+        max_len: usize,
+    ) -> Self {
+        Self {
+            s2s: S2s::new(tensors, max_len),
+            in_table,
+            out_table,
+        }
+    }
+    fn infer(&self, input: &[I]) -> Vec<O> {
+        let source = input
+            .iter()
+            .filter_map(|c| self.in_table.get(c).copied())
+            .collect_vec();
+        if source.is_empty() {
+            return Vec::new();
+        }
+        let source = [constants::SOS_IDX]
+            .into_iter()
+            .chain(source)
+            .chain([constants::EOS_IDX]);
+        let source = ndarray::Array1::from_iter(source);
+        let target = self.s2s.forward(&source);
+        target
+            .iter()
+            .skip(1)
+            .take_while(|&&x| x != constants::EOS_IDX)
+            .map(|&x| self.out_table[&x].clone())
+            .collect()
+    }
+
+    fn set_decode_strategy(&mut self, strategy: Strategy) {
+        self.s2s.strategy = strategy;
+    }
+}
+
+#[cfg(feature = "embed_model")]
+mod default_models {
+    use super::*;
+
+    /// 英単語 -> カタカナの変換器。
+    pub struct C2k {
+        inner: BaseE2k<char, char>,
+    }
+
+    impl std::fmt::Debug for C2k {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("C2k").finish()
+        }
+    }
+
+    impl C2k {
+        /// 新しいインスタンスを生成する。
+        ///
+        /// # Arguments
+        ///
+        /// max_len: 読みの最大長。
+        pub fn new(max_len: usize) -> Self {
+            #[cfg(feature = "compress_model")]
+            static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
+                use std::io::Read;
+                let model = include_bytes!("./models/model-c2k.safetensors.br");
+                let mut input = brotli_decompressor::Decompressor::new(
+                    model.as_slice(),
+                    4096, /* buffer size */
+                );
+                let mut buf = Vec::new();
+                input.read_to_end(&mut buf).expect("Model is corrupted");
+                buf
+            });
+            #[cfg(not(feature = "compress_model"))]
+            static MODEL: &[u8] = include_bytes!("./models/model-c2k.safetensors");
+            let weights =
+                safetensors::SafeTensors::deserialize(&MODEL).expect("Model is corrupted");
+            let inner = BaseE2k {
+                s2s: S2s::new(weights, max_len),
+                in_table: constants::ASCII_ENTRIES
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &c)| {
+                        (
+                            c.chars()
+                                .next()
+                                .expect("Unreachable: There should be no empty string"),
+                            i,
+                        )
+                    })
+                    .collect(),
+                out_table: constants::KANAS
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &c)| {
+                        (
+                            i,
+                            c.chars()
+                                .next()
+                                .expect("Unreachable: There should be no empty string"),
+                        )
+                    })
+                    .collect(),
+            };
+            Self { inner }
+        }
+
+        /// 推論を行う。
+        pub fn infer(&self, input: &str) -> String {
+            let input = input.chars().collect::<Vec<_>>();
+            self.inner.infer(&input).into_iter().collect()
+        }
+
+        /// アルゴリズムを設定する。
+        pub fn set_decode_strategy(&mut self, strategy: Strategy) {
+            self.inner.set_decode_strategy(strategy);
+        }
+    }
+
+    /// 発音 -> カタカナの変換器。
+    pub struct P2k {
+        inner: BaseE2k<String, char>,
+    }
+
+    impl std::fmt::Debug for P2k {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("P2k").finish()
+        }
+    }
+
+    impl P2k {
+        /// 新しいインスタンスを生成する。
+        ///
+        /// # Arguments
+        ///
+        /// max_len: 読みの最大長。
+        pub fn new(max_len: usize) -> Self {
+            #[cfg(feature = "compress_model")]
+            static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
+                use std::io::Read;
+                let model = include_bytes!("./models/model-p2k.safetensors.br");
+                let mut input = brotli_decompressor::Decompressor::new(
+                    model.as_slice(),
+                    4096, /* buffer size */
+                );
+                let mut buf = Vec::new();
+                input.read_to_end(&mut buf).expect("Model is corrupted");
+                buf
+            });
+            #[cfg(not(feature = "compress_model"))]
+            static MODEL: &[u8] = include_bytes!("./models/model-p2k.safetensors");
+            let weights =
+                safetensors::SafeTensors::deserialize(&MODEL).expect("Model is corrupted");
+            let inner = BaseE2k {
+                s2s: S2s::new(weights, max_len),
+                in_table: constants::EN_PHONES
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &c)| (c.to_string(), i))
+                    .collect(),
+                out_table: constants::KANAS
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &c)| {
+                        (
+                            i,
+                            c.chars()
+                                .next()
+                                .expect("Unreachable: There should be no empty string"),
+                        )
+                    })
+                    .collect(),
+            };
+            Self { inner }
+        }
+
+        /// 推論を行う。
+        ///
+        /// # Arguments
+        ///
+        /// input: CMUDictの発音記号。
+        pub fn infer(&self, input: &[&str]) -> String {
+            self.inner
+                .infer(&input.iter().map(|&s| s.to_string()).collect::<Vec<_>>())
+                .into_iter()
+                .collect()
+        }
+
+        /// アルゴリズムを設定する。
+        pub fn set_decode_strategy(&mut self, strategy: Strategy) {
+            self.inner.set_decode_strategy(strategy);
+        }
+    }
+}
+
+#[cfg(feature = "embed_model")]
+#[doc(inline)]
+pub use default_models::*;

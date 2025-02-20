@@ -18,9 +18,10 @@ name = "benchmark"
 harness = false
 
 [features]
-default = ["compress_model"]
+default = ["embed_model", "compress_model"]
 
 getrandom_on_wasm32_unknown = ["dep:rand", "getrandom/wasm_js"]
+embed_model = []
 compress_model = ["dep:brotli-decompressor"]
 
 [dependencies]
