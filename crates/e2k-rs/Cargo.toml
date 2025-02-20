@@ -45,7 +45,7 @@ criterion = "0.5.1"
 dialoguer = "0.11.0"
 
 [build-dependencies]
-brotli-decompressor = "4.0.2"
+brotli = "7.0.0"
 flate2 = "1.0.35"
 tar = "0.4.43"
 ureq = "3.0.5"

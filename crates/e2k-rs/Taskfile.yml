@@ -5,9 +5,6 @@ tasks:
     cmds:
       - cd tasks && uv run python3 ./generate_constants.py
       - cargo fmt
-  generate_models:
-    cmds:
-      - cd tasks && uv run python3 ./generate_models.py
   benchmark:
     cmds:
       - cd tasks && uv run pytest --benchmark-json=benchmark.json

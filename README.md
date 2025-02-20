@@ -13,7 +13,7 @@ MIT License にて公開しています。
 
 ## 謝辞
 
-モデルはPatchethium氏のものを使用しています。ありがとうございます。
+モデルは[Patchethium氏のもの](https://github.com/Patchethium/e2k/releases/tag/0.2.0)を使用しています。ありがとうございます。
 
 ### e2k のライセンス
 
