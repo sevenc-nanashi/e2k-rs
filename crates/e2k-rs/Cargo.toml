@@ -1,6 +1,6 @@
 [package]
 name = "e2k"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 
 license = "MIT"
@@ -8,7 +8,7 @@ description = "英単語から読みを推論するライブラリ（Patchethium
 documentation = "https://docs.rs/e2k"
 repository = "https://github.com/sevenc-nanashi/e2k-rs"
 
-include = ["!*", "/README.md", "/LICENSE", "/src/**/*", "!/src/**/*.safetensors"]
+include = ["!*", "/README.md", "/LICENSE", "/src/**/*.rs"]
 
 [lib]
 crate-type = ["rlib"]
