@@ -2,4 +2,5 @@ node_modules
 dist
 src/e2k_js.*
 src/e2k_js_bg.wasm.*
-
+src/models/*
+!src/models/.gitkeep

@@ -393,6 +393,7 @@ dependencies = [
 name = "e2k-js"
 version = "0.1.0"
 dependencies = [
+ "brotli-decompressor",
  "e2k",
  "serde",
  "serde-wasm-bindgen",

@@ -1,4 +1,5 @@
 use wasm_bindgen::prelude::*;
+use std::io::Read;
 
 #[wasm_bindgen(typescript_custom_section)]
 const STRATEGY_TS: &'static str = r#"
@@ -26,9 +27,14 @@ extern "C" {
 enum Strategy {
     Greedy,
     #[serde(rename_all = "camelCase")]
-    TopK { k: usize },
+    TopK {
+        k: usize,
+    },
     #[serde(rename_all = "camelCase")]
-    TopP { top_p: f32, temperature: f32 },
+    TopP {
+        top_p: f32,
+        temperature: f32,
+    },
 }
 impl Strategy {
     fn into(self) -> e2k::Strategy {
@@ -52,11 +58,15 @@ pub struct C2k {
 impl C2k {
     /// 新しいインスタンスを生成する。
     ///
+    /// @param {Uint8Array} model モデル。
     /// @param {number} maxLen 読みの最大長。
     #[wasm_bindgen(constructor)]
-    pub fn new(#[wasm_bindgen(js_name = "maxLen")] max_len: usize) -> Self {
+    pub fn new(
+        #[wasm_bindgen(js_name = "model")] model: &[u8],
+        #[wasm_bindgen(js_name = "maxLen")] max_len: usize,
+    ) -> Self {
         Self {
-            inner: e2k::C2k::new(max_len),
+            inner: e2k::C2k::with_model(model, max_len),
         }
     }
 
@@ -90,11 +100,15 @@ pub struct P2k {
 impl P2k {
     /// 新しいインスタンスを生成する。
     ///
+    /// @param {Uint8Array} model モデル。
     /// @param {number} maxLen 読みの最大長。
     #[wasm_bindgen(constructor)]
-    pub fn new(#[wasm_bindgen(js_name = "maxLen")] max_len: usize) -> Self {
+    pub fn new(
+        #[wasm_bindgen(js_name = "model")] model: &[u8],
+        #[wasm_bindgen(js_name = "maxLen")] max_len: usize,
+    ) -> Self {
         Self {
-            inner: e2k::P2k::new(max_len),
+            inner: e2k::P2k::with_model(model, max_len),
         }
     }
 
@@ -117,4 +131,14 @@ impl P2k {
 
         Ok(())
     }
+}
+
+#[wasm_bindgen(js_name = "decompressModel")]
+pub fn decompress_model(compressed: &[u8]) -> Vec<u8> {
+    let mut input = brotli_decompressor::Decompressor::new(compressed, 4096);
+    let mut decompressed_model = Vec::new();
+    input
+        .read_to_end(&mut decompressed_model)
+        .expect("Model is corrupted");
+    decompressed_model
 }

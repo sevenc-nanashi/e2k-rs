@@ -35,6 +35,14 @@
     "./sync": {
       "import": "./dist/sync.js",
       "types": "./dist/sync.d.ts"
+    },
+    "./sync/c2k": {
+      "import": "./dist/sync/c2k.js",
+      "types": "./dist/sync/c2k.d.ts"
+    },
+    "./sync/p2k": {
+      "import": "./dist/sync/p2k.js",
+      "types": "./dist/sync/p2k.d.ts"
     }
   },
   "keywords": [],
