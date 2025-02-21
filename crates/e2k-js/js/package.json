@@ -11,14 +11,16 @@
   "version": "0.2.0",
   "description": "英単語から読みを推論するライブラリ（Patchethium/e2kのRust実装）",
   "scripts": {
-    "build": "run-s build:js build:ts",
-    "build:js": "tsx ./build.ts",
+    "build": "run-s build:prepare build:js build:ts",
+    "build:prepare": "node --experimental-strip-types ./prepareBuild.ts",
+    "build:js": "pkgroll",
     "build:ts": "tsc -p tsconfig.lib.json",
     "lint": "biome check",
     "lint:fix": "biome check --write --unsafe",
-    "test": "node --test --experimental-strip-types ./tests/*.ts",
+    "test": "run-s build test:run",
+    "test:run": "node --test --experimental-strip-types ./tests/*.ts",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "run-s build test typecheck lint"
+    "prepublishOnly": "run-s build test:run typecheck lint"
   },
   "licenses": [
     {
@@ -55,8 +57,7 @@
     "@biomejs/biome": "1.9.4",
     "@types/node": "^22.13.3",
     "npm-run-all2": "^7.0.2",
-    "tsdown": "^0.5.9",
-    "tsx": "^4.19.2",
+    "pkgroll": "^2.10.0",
     "typescript": "^5.7.3"
   }
 }

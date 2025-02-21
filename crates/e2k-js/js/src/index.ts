@@ -1,4 +1,3 @@
-import { gunzip } from "fflate";
 import {
   C2k as BaseC2k,
   P2k as BaseP2k,
@@ -21,15 +20,16 @@ const initialize = () => {
 const initializeInner = async () => {
   if (initializePromise === undefined) {
     const wasm = await import("./e2k_js_bg.wasm.js");
-    const unzipped = await new Promise<Uint8Array>((resolve) => {
-      gunzip(wasm.default, (err, result) => {
-        if (err) {
-          throw err;
-        }
-        resolve(result);
-      });
-    });
-    initSync({ module: await WebAssembly.compile(unzipped) });
+    const stream = new DecompressionStream("gzip");
+    const compilePromise = WebAssembly.compileStreaming(
+      new Response(stream.readable, {
+        headers: { "Content-Type": "application/wasm" },
+      }),
+    );
+    const writer = stream.writable.getWriter();
+    await writer.write(wasm.default);
+    await writer.close();
+    initSync({ module: await compilePromise });
   }
 };
 
