@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use std::io::Read;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(typescript_custom_section)]
 const STRATEGY_TS: &'static str = r#"
