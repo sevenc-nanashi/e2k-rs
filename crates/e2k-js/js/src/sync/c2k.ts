@@ -1,7 +1,7 @@
 import "./runtime.ts";
-import { C2k as BaseC2k, decompressModel, Strategy } from "../e2k_js.js";
+import { C2k as BaseC2k, type Strategy, decompressModel } from "../e2k_js.js";
 import compressed from "../models/model-c2k.safetensors.br.js";
-export { type Strategy } from "../e2k_js.js";
+export type { Strategy } from "../e2k_js.js";
 
 /** 英単語 -> カタカナの変換器。 */
 export class C2k {

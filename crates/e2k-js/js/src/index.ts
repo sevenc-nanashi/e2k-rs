@@ -2,9 +2,9 @@ import { gunzip } from "fflate";
 import {
   C2k as BaseC2k,
   P2k as BaseP2k,
-  initSync,
+  type Strategy,
   decompressModel,
-  Strategy,
+  initSync,
 } from "./e2k_js.js";
 export type { Strategy } from "./e2k_js.js";
 
@@ -17,7 +17,7 @@ const initialize = () => {
     initializePromise = initializeInner();
   }
   return initializePromise;
-}
+};
 const initializeInner = async () => {
   if (initializePromise === undefined) {
     const wasm = await import("./e2k_js_bg.wasm.js");

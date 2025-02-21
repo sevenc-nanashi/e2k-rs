@@ -1,7 +1,7 @@
 import "./runtime.ts";
-import { P2k as BaseP2k, decompressModel, Strategy } from "../e2k_js.js";
+import { P2k as BaseP2k, type Strategy, decompressModel } from "../e2k_js.js";
 import compressed from "../models/model-p2k.safetensors.br.js";
-export { type Strategy } from "../e2k_js.js";
+export type { Strategy } from "../e2k_js.js";
 
 /** 英単語 -> カタカナの変換器。 */
 export class P2k {

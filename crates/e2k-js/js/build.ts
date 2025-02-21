@@ -5,14 +5,14 @@ import * as tsdown from "tsdown";
 await fs.promises.rm("./dist", { recursive: true, force: true });
 
 const files = [
-  { from: `../pkg/e2k_js_bg.wasm`, to: `./src/e2k_js_bg.wasm` },
+  { from: "../pkg/e2k_js_bg.wasm", to: "./src/e2k_js_bg.wasm" },
   {
-    from: `../../e2k-rs/src/models/model-c2k.safetensors.br`,
-    to: `./src/models/model-c2k.safetensors.br`,
+    from: "../../e2k-rs/src/models/model-c2k.safetensors.br",
+    to: "./src/models/model-c2k.safetensors.br",
   },
   {
-    from: `../../e2k-rs/src/models/model-p2k.safetensors.br`,
-    to: `./src/models/model-p2k.safetensors.br`,
+    from: "../../e2k-rs/src/models/model-p2k.safetensors.br",
+    to: "./src/models/model-p2k.safetensors.br",
   },
 ];
 for (const { from, to } of files) {
