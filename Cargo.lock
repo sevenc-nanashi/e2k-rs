@@ -167,6 +167,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cfg-elif"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a86fdde19924340ffa833dd033b700d817916d4f1b4f582631816e32bec6383"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -365,6 +371,7 @@ dependencies = [
  "anyhow",
  "brotli",
  "brotli-decompressor",
+ "cfg-elif",
  "clap",
  "criterion",
  "dialoguer",
