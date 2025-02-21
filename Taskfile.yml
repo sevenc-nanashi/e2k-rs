@@ -1,0 +1,6 @@
+version: "3"
+
+tasks:
+  publish:
+    - cd ./crates/e2k-rs && cargo publish
+    - cd ./crates/e2k-js/js && pnpm publish
