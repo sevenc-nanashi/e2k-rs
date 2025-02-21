@@ -10,6 +10,10 @@
   },
   "version": "0.2.1",
   "description": "英単語から読みを推論するライブラリ（Patchethium/e2kのRust実装）",
+  "author": {
+    "name": "Nanashi.",
+    "url": "https://sevenc7c.com"
+  },
   "scripts": {
     "build": "run-s build:prepare build:js build:ts",
     "build:prepare": "node --experimental-strip-types ./prepareBuild.ts",
@@ -28,7 +32,11 @@
     }
   ],
   "type": "module",
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -48,8 +56,6 @@
     }
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "fflate": "^0.8.2"
   },
