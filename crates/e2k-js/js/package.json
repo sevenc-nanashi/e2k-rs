@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/sevenc-nanashi/e2k-rs"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "英単語から読みを推論するライブラリ（Patchethium/e2kのRust実装）",
   "scripts": {
     "build": "run-s build:prepare build:js build:ts",
