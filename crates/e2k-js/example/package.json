@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "e2k": "../js",
+    "@sevenc-nanashi/e2k": "link:../js",
     "vue": "^3.5.13"
   },
   "devDependencies": {

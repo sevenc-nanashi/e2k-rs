@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { C2k } from "e2k";
+import { C2k } from "@sevenc-nanashi/e2k";
 
 const logs = ref<
   {

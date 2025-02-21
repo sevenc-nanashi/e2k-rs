@@ -16,7 +16,7 @@
 
 ```ts
 // 文字列をカタカナに変換する例
-import { C2k } from "e2k";
+import { C2k } from "@sevenc-nanashi/e2k";
 
 const src = "constants";
 // e2k/syncを使う場合：
@@ -29,7 +29,7 @@ console.log(dst); // "コンスタンツ"
 
 ```ts
 // CMUDictの発音記号をカタカナに変換する例
-import { P2k } from "e2k";
+import { P2k } from "@sevenc-nanashi/e2k";
 
 const pronunciation = ["K", "AA1", "N", "S", "T", "AH0", "N", "T", "S"];
 // e2k/syncを使う場合：

@@ -10,8 +10,8 @@ importers:
 
   crates/e2k-js/example:
     dependencies:
-      e2k:
-        specifier: ../js
+      '@sevenc-nanashi/e2k':
+        specifier: link:../js
         version: link:../js
       vue:
         specifier: ^3.5.13
