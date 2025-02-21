@@ -4,5 +4,6 @@ tasks:
   build:
     cmds:
       - rm -rf pkg
+      - cd ../e2k-rs && cargo build
       - wasm-pack build -t web
       - cd js && pnpm run build

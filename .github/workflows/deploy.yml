@@ -22,7 +22,6 @@ jobs:
       - name: Build library
         working-directory: crates/e2k-js
         run: |
-          (cd ../e2k-rs && task generate_models)
           task build
 
       - name: Build example

@@ -16,7 +16,6 @@ jobs:
       - name: Check e2k-rs
         working-directory: crates/e2k-rs
         run: |
-          task generate_models
           cargo clippy --all-targets --all-features -- -D warnings
           cargo fmt --all -- --check
 
