@@ -3,23 +3,6 @@ use std::path::PathBuf;
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=CARGO_FEATURE_EMBED_MODEL");
-    println!("cargo:rerun-if-env-changed=DOCS_RS");
-    if std::env::var("DOCS_RS").is_ok() {
-        let files = [
-            "src/models/model-c2k.safetensors",
-            "src/models/model-c2k.safetensors.br",
-            "src/models/model-p2k.safetensors",
-            "src/models/model-p2k.safetensors.br",
-        ];
-        let root = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-        for file in files.iter() {
-            let path = root.join(file);
-            if !path.exists() {
-                std::fs::write(&path, b"__docs_rs_placeholder__").unwrap();
-            }
-        }
-        return;
-    }
     if std::env::var("CARGO_FEATURE_EMBED_MODEL") == Ok("1".to_string()) {
         download_models();
     }

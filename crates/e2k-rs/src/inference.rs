@@ -344,7 +344,10 @@ impl C2k {
             cfg_elif::expr::cfg!(if (feature == "compress_model") {
                 {
                     use std::io::Read;
+                    #[cfg(not(docsrs))]
                     let model = include_bytes!("./models/model-c2k.safetensors.br");
+                    #[cfg(docsrs)]
+                    let model = [0u8; 0];
                     let mut input = brotli_decompressor::Decompressor::new(model.as_slice(), 4096);
                     let mut buf = Vec::new();
                     input.read_to_end(&mut buf).expect("Model is corrupted");
@@ -354,10 +357,6 @@ impl C2k {
                 include_bytes!("./models/model-c2k.safetensors").to_vec()
             })
         });
-
-        if &MODEL.as_slice() == b"__docs_rs_placeholder__" {
-            unreachable!("The crate is not built correctly, the embedded model is dummy");
-        }
 
         Self::with_model(&MODEL, max_len)
     }
@@ -429,7 +428,10 @@ impl P2k {
             cfg_elif::expr::cfg!(if (feature == "compress_model") {
                 {
                     use std::io::Read;
+                    #[cfg(not(docsrs))]
                     let model = include_bytes!("./models/model-p2k.safetensors.br");
+                    #[cfg(docsrs)]
+                    let model = [0u8; 0];
                     let mut input = brotli_decompressor::Decompressor::new(model.as_slice(), 4096);
                     let mut buf = Vec::new();
                     input.read_to_end(&mut buf).expect("Model is corrupted");
@@ -439,10 +441,6 @@ impl P2k {
                 include_bytes!("./models/model-p2k.safetensors").to_vec()
             })
         });
-
-        if &MODEL.as_slice() == b"__docs_rs_placeholder__" {
-            unreachable!("The crate is not built correctly, the embedded model is dummy");
-        }
 
         Self::with_model(&MODEL, max_len)
     }
