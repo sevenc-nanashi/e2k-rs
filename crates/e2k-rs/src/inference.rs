@@ -341,13 +341,12 @@ impl C2k {
     #[cfg(feature = "embed_model")]
     pub fn new(max_len: usize) -> Self {
         static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
-            cfg_elif::expr::cfg!(if (feature == "compress_model") {
+            cfg_elif::expr::cfg!(if (docsrs) {
+                Vec::new()
+            } else if (feature == "compress_model") {
                 {
                     use std::io::Read;
-                    #[cfg(not(docsrs))]
                     let model = include_bytes!("./models/model-c2k.safetensors.br");
-                    #[cfg(docsrs)]
-                    let model = [0u8; 0];
                     let mut input = brotli_decompressor::Decompressor::new(model.as_slice(), 4096);
                     let mut buf = Vec::new();
                     input.read_to_end(&mut buf).expect("Model is corrupted");
@@ -425,13 +424,12 @@ impl P2k {
     #[cfg(feature = "embed_model")]
     pub fn new(max_len: usize) -> Self {
         static MODEL: std::sync::LazyLock<Vec<u8>> = std::sync::LazyLock::new(|| {
-            cfg_elif::expr::cfg!(if (feature == "compress_model") {
+            cfg_elif::expr::cfg!(if (docsrs) {
+                Vec::new()
+            } else if (feature == "compress_model") {
                 {
                     use std::io::Read;
-                    #[cfg(not(docsrs))]
                     let model = include_bytes!("./models/model-p2k.safetensors.br");
-                    #[cfg(docsrs)]
-                    let model = [0u8; 0];
                     let mut input = brotli_decompressor::Decompressor::new(model.as_slice(), 4096);
                     let mut buf = Vec::new();
                     input.read_to_end(&mut buf).expect("Model is corrupted");
