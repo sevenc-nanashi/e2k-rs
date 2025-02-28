@@ -3,6 +3,14 @@ use std::path::PathBuf;
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=CARGO_FEATURE_EMBED_MODEL");
+    println!("cargo:rerun-if-env-changed=DOCS_RS");
+    if std::env::var("DOCS_RS").is_ok() {
+        std::fs::write("src/models/model-c2k.safetensors", "__docs_rs_placeholder__").unwrap();
+        std::fs::write("src/models/model-c2k.safetensors.br", "__docs_rs_placeholder__").unwrap();
+        std::fs::write("src/models/model-p2k.safetensors", "__docs_rs_placeholder__").unwrap();
+        std::fs::write("src/models/model-p2k.safetensors.br", "__docs_rs_placeholder__").unwrap();
+        return;
+    }
     if std::env::var("CARGO_FEATURE_EMBED_MODEL") == Ok("1".to_string()) {
         download_models();
     }

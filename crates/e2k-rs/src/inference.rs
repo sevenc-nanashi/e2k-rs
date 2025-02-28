@@ -355,6 +355,10 @@ impl C2k {
             })
         });
 
+        if &MODEL.as_slice() == b"__docs_rs_placeholder__" {
+            unreachable!("The crate is not built correctly, the embedded model is dummy");
+        }
+
         Self::with_model(&MODEL, max_len)
     }
 
@@ -435,6 +439,10 @@ impl P2k {
                 include_bytes!("./models/model-p2k.safetensors").to_vec()
             })
         });
+
+        if &MODEL.as_slice() == b"__docs_rs_placeholder__" {
+            unreachable!("The crate is not built correctly, the embedded model is dummy");
+        }
 
         Self::with_model(&MODEL, max_len)
     }
