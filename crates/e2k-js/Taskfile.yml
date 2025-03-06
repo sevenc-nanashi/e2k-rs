@@ -5,5 +5,6 @@ tasks:
     cmds:
       - rm -rf pkg
       - cd ../e2k-rs && cargo build
+      - cd ../e2k-rs && task generate_about && cp ./NOTICE.md ../e2k-js/js/NOTICE.md
       - wasm-pack build -t web
       - cd js && pnpm run build

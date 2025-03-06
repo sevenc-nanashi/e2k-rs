@@ -1,6 +1,10 @@
 version: "3"
 
 tasks:
+  generate_about:
+    cmds:
+      - cargo about generate about.hbs > ./NOTICE.md
+
   generate_constants:
     cmds:
       - cd tasks && uv run python3 ./generate_constants.py
