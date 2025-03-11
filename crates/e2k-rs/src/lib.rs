@@ -41,4 +41,5 @@ mod constants;
 mod inference;
 mod layers;
 
+pub use constants::{ASCII_ENTRIES, EN_PHONES, KANAS};
 pub use inference::*;
