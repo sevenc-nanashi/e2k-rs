@@ -100,14 +100,14 @@ wheels = [
 
 [[package]]
 name = "e2k"
-version = "0.2.2"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9e/e2/4acbd333e39547f1a1c6ee6f0b1c9a634fe1f0713e4dc93fe651592602ae/e2k-0.2.2.tar.gz", hash = "sha256:704281b570652428d920421913daac4551bb267d83f29a01f17384a59cce7f2f", size = 8236202 }
+sdist = { url = "https://files.pythonhosted.org/packages/75/52/5e44462cd146c05513082522dab6ac606b3f119f58f42188fb7da02d3472/e2k-0.3.0.tar.gz", hash = "sha256:be7d40339aae8eb81f84db54183b34bd6914aad3f8396e4fe622f81b17ddb98b", size = 8225627 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/f4/f697260fbdab5b554bf2ff0e02789a3d4a8565789e6d79f3123ee79189fb/e2k-0.2.2-py3-none-any.whl", hash = "sha256:a415e07d4807c0e8c165317a1572ae5c97753cdfd7cf6f88ac6acb3b5bc68492", size = 8231267 },
+    { url = "https://files.pythonhosted.org/packages/b2/b3/e2fe2d3d6bff7e6e2a61bfe5d90b50fa9bebcdc0861eb066a9c939054f94/e2k-0.3.0-py3-none-any.whl", hash = "sha256:67ae1a437d39d582def8c1dfec3634f61897d1b7dc49ce89e714d10b841c7c14", size = 8221224 },
 ]
 
 [[package]]
@@ -435,7 +435,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "brotli", specifier = ">=1.1.0" },
-    { name = "e2k", specifier = ">=0.1.2" },
+    { name = "e2k", specifier = ">=0.3.0" },
     { name = "safetensors", specifier = ">=0.5.2" },
 ]
 
