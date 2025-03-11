@@ -5,49 +5,44 @@ fn extract_strategy(strategy: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyRes
     Ok(match strategy {
         "greedy" => e2k::Strategy::Greedy,
         "top_k" => {
-            let k = kwargs.and_then(|kwargs| {
-                kwargs
-                    .get_item("k")
-                    .ok()
-                    .flatten()
-                    .map(|k| k.extract::<usize>())
-            });
-            match k {
-                Some(Err(err)) => return Err(err),
-                Some(Ok(k)) => e2k::Strategy::TopK(e2k::StrategyTopK { k }),
-                None => e2k::Strategy::TopK(e2k::StrategyTopK::default()),
+            let k = kwargs
+                .map(|kwargs| kwargs.get_item("k"))
+                .transpose()?
+                .flatten()
+                .map(|k| k.extract::<usize>())
+                .transpose()?;
+
+            let mut strategy = e2k::StrategyTopK::default();
+            if let Some(k) = k {
+                strategy.k = k;
             }
+
+            e2k::Strategy::TopK(strategy)
         }
         "top_p" => {
-            let top_p = kwargs.and_then(|kwargs| {
-                kwargs
-                    .get_item("p")
-                    .ok()
-                    .flatten()
-                    .map(|top_p| top_p.extract::<f32>())
-            });
-            let temperature = kwargs.and_then(|kwargs| {
-                kwargs
-                    .get_item("t")
-                    .ok()
-                    .flatten()
-                    .map(|temperature| temperature.extract::<f32>())
-            });
-            match (top_p, temperature) {
-                (Some(Err(err)), _) => return Err(err),
-                (_, Some(Err(err))) => return Err(err),
-                (top_p, temperature) => {
-                    let mut strategy = e2k::StrategyTopP::default();
-                    if let Some(Ok(top_p)) = top_p {
-                        strategy.top_p = top_p;
-                    }
-                    if let Some(Ok(temperature)) = temperature {
-                        strategy.temperature = temperature;
-                    }
+            let top_p = kwargs
+                .map(|kwargs| kwargs.get_item("p"))
+                .transpose()?
+                .flatten()
+                .map(|top_p| top_p.extract::<f32>())
+                .transpose()?;
 
-                    e2k::Strategy::TopP(strategy)
-                }
+            let temperature = kwargs
+                .map(|kwargs| kwargs.get_item("t"))
+                .transpose()?
+                .flatten()
+                .map(|temperature| temperature.extract::<f32>())
+                .transpose()?;
+
+            let mut strategy = e2k::StrategyTopP::default();
+            if let Some(top_p) = top_p {
+                strategy.top_p = top_p;
             }
+            if let Some(temperature) = temperature {
+                strategy.temperature = temperature;
+            }
+
+            e2k::Strategy::TopP(strategy)
         }
         _ => {
             return Err(pyo3::exceptions::PyValueError::new_err(
