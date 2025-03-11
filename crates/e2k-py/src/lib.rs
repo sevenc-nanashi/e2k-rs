@@ -1,0 +1,152 @@
+use pyo3::prelude::*;
+use pyo3::types::{PyBytes, PyDict, PyList};
+
+fn extract_strategy(strategy: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<e2k::Strategy> {
+    Ok(match strategy {
+        "greedy" => e2k::Strategy::Greedy,
+        "top_k" => {
+            let k = kwargs.and_then(|kwargs| {
+                kwargs
+                    .get_item("k")
+                    .ok()
+                    .flatten()
+                    .map(|k| k.extract::<usize>())
+            });
+            match k {
+                Some(Err(err)) => return Err(err),
+                Some(Ok(k)) => e2k::Strategy::TopK(e2k::StrategyTopK { k }),
+                None => e2k::Strategy::TopK(e2k::StrategyTopK::default()),
+            }
+        }
+        "top_p" => {
+            let top_p = kwargs.and_then(|kwargs| {
+                kwargs
+                    .get_item("p")
+                    .ok()
+                    .flatten()
+                    .map(|top_p| top_p.extract::<f32>())
+            });
+            let temperature = kwargs.and_then(|kwargs| {
+                kwargs
+                    .get_item("t")
+                    .ok()
+                    .flatten()
+                    .map(|temperature| temperature.extract::<f32>())
+            });
+            match (top_p, temperature) {
+                (Some(Err(err)), _) => return Err(err),
+                (_, Some(Err(err))) => return Err(err),
+                (top_p, temperature) => {
+                    let mut strategy = e2k::StrategyTopP::default();
+                    if let Some(Ok(top_p)) = top_p {
+                        strategy.top_p = top_p;
+                    }
+                    if let Some(Ok(temperature)) = temperature {
+                        strategy.temperature = temperature;
+                    }
+
+                    e2k::Strategy::TopP(strategy)
+                }
+            }
+        }
+        _ => {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "strategy must be one of 'greedy', 'top_k', 'top_p'",
+            ));
+        }
+    })
+}
+
+#[pyclass]
+struct C2k {
+    inner: e2k::C2k,
+}
+
+#[pymethods]
+impl C2k {
+    #[new]
+    #[pyo3(signature = (max_len = 32))]
+    fn new(max_len: usize) -> Self {
+        Self {
+            inner: e2k::C2k::new(max_len),
+        }
+    }
+
+    #[staticmethod]
+    #[pyo3(signature = (model, max_len = 32))]
+    fn with_model(model: Bound<'_, PyBytes>, max_len: usize) -> Self {
+        let model = model.as_bytes().to_vec();
+        Self {
+            inner: e2k::C2k::with_model(&model, max_len),
+        }
+    }
+
+    #[pyo3(signature = (strategy, **kwargs))]
+    fn set_decode_strategy(
+        &mut self,
+        strategy: &str,
+        kwargs: Option<&Bound<'_, PyDict>>,
+    ) -> PyResult<()> {
+        let strategy = extract_strategy(strategy, kwargs)?;
+
+        self.inner.set_decode_strategy(strategy);
+
+        Ok(())
+    }
+
+    fn __call__(&self, src: &str) -> String {
+        self.inner.infer(src)
+    }
+}
+
+#[pyclass]
+struct P2k {
+    inner: e2k::P2k,
+}
+
+#[pymethods]
+impl P2k {
+    #[new]
+    #[pyo3(signature = (max_len = 32))]
+    fn new(max_len: usize) -> Self {
+        Self {
+            inner: e2k::P2k::new(max_len),
+        }
+    }
+
+    #[staticmethod]
+    #[pyo3(signature = (model, max_len = 32))]
+    fn with_model(model: Bound<'_, PyBytes>, max_len: usize) -> Self {
+        let model = model.as_bytes().to_vec();
+        Self {
+            inner: e2k::P2k::with_model(&model, max_len),
+        }
+    }
+
+    #[pyo3(signature = (strategy, **kwargs))]
+    fn set_decode_strategy(
+        &mut self,
+        strategy: &str,
+        kwargs: Option<&Bound<'_, PyDict>>,
+    ) -> PyResult<()> {
+        let strategy = extract_strategy(strategy, kwargs)?;
+
+        self.inner.set_decode_strategy(strategy);
+
+        Ok(())
+    }
+
+    fn __call__(&self, src: &Bound<'_, PyList>) -> PyResult<String> {
+        let src: Vec<String> = src.extract()?;
+        Ok(self
+            .inner
+            .infer(&src.iter().map(|s| s.as_str()).collect::<Vec<_>>()))
+    }
+}
+
+#[pymodule]
+fn e2k_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<C2k>()?;
+    m.add_class::<P2k>()?;
+    Ok(())
+}
