@@ -33,7 +33,8 @@ jobs:
       - name: Check e2k-py
         working-directory: crates/e2k-py
         run: |
+          uv sync
           cargo clippy --all-targets --all-features -- -D warnings
           cargo fmt --all -- --check
-          task build
+          task develop
           task test
