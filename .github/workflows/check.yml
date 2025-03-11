@@ -36,5 +36,5 @@ jobs:
           uv sync
           cargo clippy --all-targets --all-features -- -D warnings
           cargo fmt --all -- --check
-          task develop
+          uv run maturin develop
           task test
