@@ -52,7 +52,7 @@ fn extract_strategy(strategy: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyRes
     })
 }
 
-#[pyclass]
+#[pyclass(frozen)]
 struct C2k {
     inner: std::sync::RwLock<e2k::C2k>,
 }
@@ -78,15 +78,14 @@ impl C2k {
 
     #[pyo3(signature = (strategy, **kwargs))]
     fn set_decode_strategy(
-        slf: &Bound<'_, Self>,
+        &self,
         strategy: &str,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<()> {
         let strategy = extract_strategy(strategy, kwargs)?;
 
         {
-            let inner = &slf.borrow().inner;
-            let mut inner = inner.write().unwrap();
+            let mut inner = self.inner.write().unwrap();
 
             inner.set_decode_strategy(strategy);
         };
@@ -125,15 +124,14 @@ impl P2k {
 
     #[pyo3(signature = (strategy, **kwargs))]
     fn set_decode_strategy(
-        slf: &Bound<'_, Self>,
+        &self,
         strategy: &str,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<()> {
         let strategy = extract_strategy(strategy, kwargs)?;
 
         {
-            let inner = &slf.borrow().inner;
-            let mut inner = inner.write().unwrap();
+            let mut inner = self.inner.write().unwrap();
 
             inner.set_decode_strategy(strategy);
         };
