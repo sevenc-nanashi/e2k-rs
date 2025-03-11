@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyDict, PyList, PyType};
+use pyo3::types::{PyDict, PyList, PyType};
 
 fn extract_strategy(strategy: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<e2k::Strategy> {
     Ok(match strategy {
@@ -69,8 +69,7 @@ impl C2k {
 
     #[classmethod]
     #[pyo3(signature = (model, max_len = 32))]
-    fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
-        let model = model.as_bytes();
+    fn with_model(_cls: Bound<'_, PyType>, model: &[u8], max_len: usize) -> Self {
         Self {
             inner: std::sync::RwLock::new(e2k::C2k::with_model(model, max_len)),
         }
@@ -115,8 +114,7 @@ impl P2k {
 
     #[classmethod]
     #[pyo3(signature = (model, max_len = 32))]
-    fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
-        let model = model.as_bytes();
+    fn with_model(_cls: Bound<'_, PyType>, model: &[u8], max_len: usize) -> Self {
         Self {
             inner: std::sync::RwLock::new(e2k::P2k::with_model(model, max_len)),
         }
@@ -139,8 +137,7 @@ impl P2k {
         Ok(())
     }
 
-    fn __call__(&self, src: &Bound<'_, PyList>) -> PyResult<String> {
-        let src: Vec<String> = src.extract()?;
+    fn __call__(&self, src: Vec<String>) -> PyResult<String> {
         Ok(self
             .inner
             .read()
