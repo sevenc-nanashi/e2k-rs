@@ -11,6 +11,15 @@ def test_c2k(benchmark):
 
     benchmark.pedantic(bench_c2k, iterations=1, rounds=100)
 
+def test_c2k_long(benchmark):
+    c2k = e2k.C2K(128)
+
+    word = "phosphoribosylaminoimidazolesuccinocarboxamide"
+    def bench_c2k():
+        c2k(word)
+
+    benchmark.pedantic(bench_c2k, iterations=1, rounds=100)
+
 
 def test_p2k(benchmark):
     p2k = e2k.P2K()
