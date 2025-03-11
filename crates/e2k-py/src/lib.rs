@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyDict, PyList};
+use pyo3::types::{PyBytes, PyDict, PyList, PyString, PyType};
 
 fn extract_strategy(strategy: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<e2k::Strategy> {
     Ok(match strategy {
@@ -72,9 +72,9 @@ impl C2k {
         }
     }
 
-    #[staticmethod]
+    #[classmethod]
     #[pyo3(signature = (model, max_len = 32))]
-    fn with_model(model: Bound<'_, PyBytes>, max_len: usize) -> Self {
+    fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
         let model = model.as_bytes().to_vec();
         Self {
             inner: e2k::C2k::with_model(&model, max_len),
@@ -83,13 +83,13 @@ impl C2k {
 
     #[pyo3(signature = (strategy, **kwargs))]
     fn set_decode_strategy(
-        &mut self,
+        slf: &Bound<'_, Self>,
         strategy: &str,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<()> {
         let strategy = extract_strategy(strategy, kwargs)?;
 
-        self.inner.set_decode_strategy(strategy);
+        slf.borrow_mut().inner.set_decode_strategy(strategy);
 
         Ok(())
     }
@@ -114,9 +114,9 @@ impl P2k {
         }
     }
 
-    #[staticmethod]
+    #[classmethod]
     #[pyo3(signature = (model, max_len = 32))]
-    fn with_model(model: Bound<'_, PyBytes>, max_len: usize) -> Self {
+    fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
         let model = model.as_bytes().to_vec();
         Self {
             inner: e2k::P2k::with_model(&model, max_len),
@@ -125,13 +125,13 @@ impl P2k {
 
     #[pyo3(signature = (strategy, **kwargs))]
     fn set_decode_strategy(
-        &mut self,
+        slf: &Bound<'_, Self>,
         strategy: &str,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<()> {
         let strategy = extract_strategy(strategy, kwargs)?;
 
-        self.inner.set_decode_strategy(strategy);
+        slf.borrow_mut().inner.set_decode_strategy(strategy);
 
         Ok(())
     }
@@ -144,9 +144,36 @@ impl P2k {
     }
 }
 
-#[pymodule]
+#[pymodule(name = "e2k_rs")]
 fn e2k_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<C2k>()?;
     m.add_class::<P2k>()?;
+
+    let kanas = PyList::new(
+        m.py(),
+        e2k::KANAS
+            .iter()
+            .map(|kana| PyString::new(m.py(), kana))
+            .collect::<Vec<_>>(),
+    )?;
+    let ascii_entries = PyList::new(
+        m.py(),
+        e2k::ASCII_ENTRIES
+            .iter()
+            .map(|entry| PyString::new(m.py(), entry))
+            .collect::<Vec<_>>(),
+    )?;
+    let en_phones = PyList::new(
+        m.py(),
+        e2k::EN_PHONES
+            .iter()
+            .map(|phone| PyString::new(m.py(), phone))
+            .collect::<Vec<_>>(),
+    )?;
+
+    m.add("kanas", kanas)?;
+    m.add("ascii_entries", ascii_entries)?;
+    m.add("en_phones", en_phones)?;
+
     Ok(())
 }
