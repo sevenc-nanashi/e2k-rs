@@ -6,6 +6,7 @@
 
 - `./crates/e2k-rs`：メイン実装（Rust API）。 
 - `./crates/e2k-js`：Wasm + JS API。
+- `./crates/e2k-py`：PyO3によるPython API。
 
 ## ライセンス
 
