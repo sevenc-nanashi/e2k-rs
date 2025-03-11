@@ -1,0 +1,10 @@
+version: "3"
+
+tasks:
+  build:
+    cmds:
+      - cd ../e2k-rs && task generate_about && cp ./NOTICE.md ../e2k-py/NOTICE.md
+      - maturin build
+  test:
+    cmds:
+      - uv run pytest

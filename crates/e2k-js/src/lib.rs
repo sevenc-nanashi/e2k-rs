@@ -53,7 +53,7 @@ pub struct C2k {
     inner: e2k::C2k,
 }
 
-/// 英単語 -> カタカナの変換器。
+/// 英単語 -> カタカナの推論を行う。
 #[wasm_bindgen]
 impl C2k {
     /// 新しいインスタンスを生成する。
@@ -90,7 +90,7 @@ impl C2k {
     }
 }
 
-/// 発音 -> カタカナの変換器。
+/// 発音 -> カタカナの推論を行う。
 #[wasm_bindgen]
 pub struct P2k {
     inner: e2k::P2k,

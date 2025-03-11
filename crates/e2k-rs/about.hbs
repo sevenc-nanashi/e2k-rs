@@ -4,7 +4,7 @@
 e2k-rs が依存しているクレートのライセンス一覧です。
 
 {{#each overview}}
-- {{name}} ({{count}})
+- {{{name}}} ({{count}})
 {{/each}}
 
 
@@ -13,12 +13,12 @@ e2k-rs が依存しているクレートのライセンス一覧です。
 {{ #each licenses }}
 ## {{ name }}
 
-Used by:
+クレート：
 {{ #each used_by }}
 {{ #if crate.repository }}
-- [{{crate.name}}]({{crate.repository}})
+- [{{{crate.name}}}]({{crate.repository}})
 {{ else }}
-- [{{crate.name}}](https://crates.io/crates/{{crate.name}})
+- [{{{crate.name}}}](https://crates.io/crates/{{crate.name}})
 {{ /if }}
 {{ /each }}
 

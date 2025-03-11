@@ -4,3 +4,4 @@ tasks:
   publish:
     - cd ./crates/e2k-rs && cargo publish --no-default-features
     - cd ./crates/e2k-js/js && pnpm publish
+    - cd ./crates/e2k-py && uv run maturin publish
