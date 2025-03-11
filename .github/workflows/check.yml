@@ -29,3 +29,11 @@ jobs:
           pnpm run lint
           pnpm run typecheck
           pnpm run test
+
+      - name: Check e2k-py
+        working-directory: crates/e2k-py
+        run: |
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo fmt --all -- --check
+          task build
+          task test
