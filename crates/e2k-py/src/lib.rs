@@ -163,24 +163,19 @@ fn e2k_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     let kanas = PyList::new(
         m.py(),
-        e2k::KANAS
-            .iter()
-            .map(|kana| PyString::new(m.py(), kana))
-            .collect::<Vec<_>>(),
+        e2k::KANAS.iter().map(|kana| PyString::new(m.py(), kana)),
     )?;
     let ascii_entries = PyList::new(
         m.py(),
         e2k::ASCII_ENTRIES
             .iter()
-            .map(|entry| PyString::new(m.py(), entry))
-            .collect::<Vec<_>>(),
+            .map(|entry| PyString::new(m.py(), entry)),
     )?;
     let en_phones = PyList::new(
         m.py(),
         e2k::EN_PHONES
             .iter()
-            .map(|phone| PyString::new(m.py(), phone))
-            .collect::<Vec<_>>(),
+            .map(|phone| PyString::new(m.py(), phone)),
     )?;
 
     m.add("kanas", kanas)?;
