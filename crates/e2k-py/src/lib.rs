@@ -59,7 +59,7 @@ fn extract_strategy(strategy: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyRes
 
 #[pyclass]
 struct C2k {
-    inner: e2k::C2k,
+    inner: std::sync::RwLock<e2k::C2k>,
 }
 
 #[pymethods]
@@ -68,7 +68,7 @@ impl C2k {
     #[pyo3(signature = (max_len = 32))]
     fn new(max_len: usize) -> Self {
         Self {
-            inner: e2k::C2k::new(max_len),
+            inner: std::sync::RwLock::new(e2k::C2k::new(max_len)),
         }
     }
 
@@ -77,7 +77,7 @@ impl C2k {
     fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
         let model = model.as_bytes();
         Self {
-            inner: e2k::C2k::with_model(model, max_len),
+            inner: std::sync::RwLock::new(e2k::C2k::with_model(model, max_len)),
         }
     }
 
@@ -89,19 +89,24 @@ impl C2k {
     ) -> PyResult<()> {
         let strategy = extract_strategy(strategy, kwargs)?;
 
-        slf.borrow_mut().inner.set_decode_strategy(strategy);
+        {
+            let inner = &slf.borrow().inner;
+            let mut inner = inner.write().unwrap();
+
+            inner.set_decode_strategy(strategy);
+        };
 
         Ok(())
     }
 
     fn __call__(&self, src: &str) -> String {
-        self.inner.infer(src)
+        self.inner.read().unwrap().infer(src)
     }
 }
 
 #[pyclass]
 struct P2k {
-    inner: e2k::P2k,
+    inner: std::sync::RwLock<e2k::P2k>,
 }
 
 #[pymethods]
@@ -110,7 +115,7 @@ impl P2k {
     #[pyo3(signature = (max_len = 32))]
     fn new(max_len: usize) -> Self {
         Self {
-            inner: e2k::P2k::new(max_len),
+            inner: std::sync::RwLock::new(e2k::P2k::new(max_len)),
         }
     }
 
@@ -119,7 +124,7 @@ impl P2k {
     fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
         let model = model.as_bytes();
         Self {
-            inner: e2k::P2k::with_model(model, max_len),
+            inner: std::sync::RwLock::new(e2k::P2k::with_model(model, max_len)),
         }
     }
 
@@ -131,7 +136,12 @@ impl P2k {
     ) -> PyResult<()> {
         let strategy = extract_strategy(strategy, kwargs)?;
 
-        slf.borrow_mut().inner.set_decode_strategy(strategy);
+        {
+            let inner = &slf.borrow().inner;
+            let mut inner = inner.write().unwrap();
+
+            inner.set_decode_strategy(strategy);
+        };
 
         Ok(())
     }
@@ -140,6 +150,8 @@ impl P2k {
         let src: Vec<String> = src.extract()?;
         Ok(self
             .inner
+            .read()
+            .unwrap()
             .infer(&src.iter().map(|s| s.as_str()).collect::<Vec<_>>()))
     }
 }
