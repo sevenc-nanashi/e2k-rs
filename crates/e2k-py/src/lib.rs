@@ -75,9 +75,9 @@ impl C2k {
     #[classmethod]
     #[pyo3(signature = (model, max_len = 32))]
     fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
-        let model = model.as_bytes().to_vec();
+        let model = model.as_bytes();
         Self {
-            inner: e2k::C2k::with_model(&model, max_len),
+            inner: e2k::C2k::with_model(model, max_len),
         }
     }
 
@@ -117,9 +117,9 @@ impl P2k {
     #[classmethod]
     #[pyo3(signature = (model, max_len = 32))]
     fn with_model(_cls: Bound<'_, PyType>, model: Bound<'_, PyBytes>, max_len: usize) -> Self {
-        let model = model.as_bytes().to_vec();
+        let model = model.as_bytes();
         Self {
-            inner: e2k::P2k::with_model(&model, max_len),
+            inner: e2k::P2k::with_model(model, max_len),
         }
     }
 
