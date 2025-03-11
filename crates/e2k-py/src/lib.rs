@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyDict, PyList, PyString, PyType};
+use pyo3::types::{PyBytes, PyDict, PyList, PyType};
 
 fn extract_strategy(strategy: &str, kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<e2k::Strategy> {
     Ok(match strategy {
@@ -161,22 +161,9 @@ fn e2k_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<C2k>()?;
     m.add_class::<P2k>()?;
 
-    let kanas = PyList::new(
-        m.py(),
-        e2k::KANAS.iter().map(|kana| PyString::new(m.py(), kana)),
-    )?;
-    let ascii_entries = PyList::new(
-        m.py(),
-        e2k::ASCII_ENTRIES
-            .iter()
-            .map(|entry| PyString::new(m.py(), entry)),
-    )?;
-    let en_phones = PyList::new(
-        m.py(),
-        e2k::EN_PHONES
-            .iter()
-            .map(|phone| PyString::new(m.py(), phone)),
-    )?;
+    let kanas = PyList::new(m.py(), e2k::KANAS)?;
+    let ascii_entries = PyList::new(m.py(), e2k::ASCII_ENTRIES)?;
+    let en_phones = PyList::new(m.py(), e2k::EN_PHONES)?;
 
     m.add("kanas", kanas)?;
     m.add("ascii_entries", ascii_entries)?;
